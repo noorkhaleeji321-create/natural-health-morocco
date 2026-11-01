@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Hide vertical & horizontal scrollbars across all browsers while keeping smooth scrolling */
+html,
+body,
+#root,
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+
+/* Smooth scrolling and prevent layout shifts */
+html {
+  scroll-behavior: smooth;
+  background-color: #0C100E;
+}
+
+body {
+  background-color: #0C100E;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@keyframes marquee-to-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee-right {
+  display: inline-flex;
+  width: max-content;
+  animation: marquee-to-right 40s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-ltr {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0%, 0, 0);
+  }
+}
+
+.animate-scroll-ltr {
+  display: flex;
+  width: max-content;
+  animation: marquee-ltr 30s linear infinite !important;
+  will-change: transform;
+}
+

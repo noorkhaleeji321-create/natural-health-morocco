@@ -1,0 +1,7 @@
+# Robots.txt for natural-morocco
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+
+Sitemap: https://natural-health-morocco.vercel.app/sitemap.xml
