@@ -42,6 +42,7 @@ export const AdminGeneralSettingsTab: React.FC<AdminGeneralSettingsTabProps> = (
   const [loadingBotStatus, setLoadingBotStatus] = useState(false);
   const [isTestingBot, setIsTestingBot] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [testWhatsAppUrl, setTestWhatsAppUrl] = useState<string | null>(null);
 
   const fetchBotStatus = async () => {
     setLoadingBotStatus(true);
@@ -113,6 +114,7 @@ export const AdminGeneralSettingsTab: React.FC<AdminGeneralSettingsTabProps> = (
 
   const handleTestNotification = async () => {
     setIsTestingBot(true);
+    setTestWhatsAppUrl(null);
     try {
       const res = await fetch('/api/bot/test-notification', {
         method: 'POST',
@@ -123,8 +125,11 @@ export const AdminGeneralSettingsTab: React.FC<AdminGeneralSettingsTabProps> = (
       });
       const data = await res.json();
       if (res.ok && data.success && data.whatsappUrl) {
-        showNotification('🚀 تم تحضير تنبيه WhatsApp التجريبي بنجاح! يتم الفتح الآن...', 'success');
-        window.open(data.whatsappUrl, '_blank');
+        setTestWhatsAppUrl(data.whatsappUrl);
+        showNotification('🚀 تم تحضير رابط إشعار WhatsApp التجريبي بنجاح! انقر على الزر أدناه.', 'success');
+        try {
+          window.open(data.whatsappUrl, '_blank');
+        } catch {}
         fetchBotStatus();
       } else {
         showNotification(`⚠️ ${data.message || 'فشل إنشاء إشعار WhatsApp التجريبي.'}`, 'error');
@@ -268,6 +273,24 @@ export const AdminGeneralSettingsTab: React.FC<AdminGeneralSettingsTabProps> = (
             <span>إنشاء نسخة احتياطية الآن</span>
           </button>
         </div>
+
+        {testWhatsAppUrl && (
+          <div className="mt-4 p-4 rounded-2xl bg-[#102A1C] border border-[#10B981]/40 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-2 text-[#6EE7B7] text-xs font-bold">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-[#10B981]" />
+              <span>رابط واتساب التجريبي جاهز (إذا تم حظر النافذة التلقائية من المتصفح، انقر هنا):</span>
+            </div>
+            <a
+              href={testWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#25D366] hover:bg-[#20bd5a] text-black font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-102 flex items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>فتح واتساب وإرسال الرسالة التجريبية 💬</span>
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Main Settings Form */}
