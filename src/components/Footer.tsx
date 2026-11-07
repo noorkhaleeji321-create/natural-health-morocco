@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Shield,
   HelpCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -33,6 +34,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const { storeSettings, adminLogin } = useStore();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactSubject, setContactSubject] = useState('');
@@ -206,6 +208,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </button>
               </li>
               <li>
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(true)}
+                  className="hover:text-[#F3BA63] transition-colors block font-bold text-[#FBBF24] text-right w-full cursor-pointer"
+                >
+                  سياسة الاسترجاع والضمان 🔄
+                </button>
+              </li>
+              <li>
                 <a
                   href="#cart"
                   onClick={(e) => handleLink(e, 'cart', '#cart')}
@@ -354,6 +365,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
               <span>سياسة الخصوصية</span>
             </button>
+            <span className="text-[#36493F]">•</span>
+            <button
+              type="button"
+              onClick={() => setShowReturnModal(true)}
+              className="hover:text-[#FBBF24] transition-colors cursor-pointer flex items-center gap-1 text-[#FCD34D]"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-[#F59E0B]" />
+              <span>سياسة الاسترجاع والاستبدال</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-1 text-[#786D60]">
@@ -445,6 +465,94 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 type="button"
                 onClick={() => setShowPrivacyModal(false)}
                 className="bg-[#10B981] hover:bg-[#059669] text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-lg"
+              >
+                فهمت وموافق ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: سياسة الاسترجاع والاستبدال والضمان (Return & Refund Policy) */}
+      {showReturnModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-[#101713] border border-[#26372D] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowReturnModal(false)}
+              className="absolute top-5 left-5 text-[#A89C89] hover:text-white bg-[#1A2620] hover:bg-[#2A3C32] p-2 rounded-xl transition-colors cursor-pointer"
+              title="إغلاق"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#213027]">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shadow-lg shrink-0">
+                <RotateCcw className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black font-['Cairo'] text-white">
+                  سياسة الاسترجاع والاستبدال والضمان
+                </h3>
+                <p className="text-xs text-[#A89C89]">
+                  حقوقكم وراحتكم مضمونة 100% مع {storeSettings.storeName}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-5 text-xs sm:text-sm text-[#C8BCAB] leading-relaxed">
+              <div className="bg-[#15201A] p-4 rounded-2xl border border-[#273B30]">
+                <p className="font-bold text-white mb-1.5 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                  <span>المعاينة قبل الدفع عند الاستلام:</span>
+                </p>
+                <p className="text-[#A89C89]">
+                  يحق لكل زبون فحص الطرد والتأكد من سلامة المنتجات ومطابقتها لطلبه عند وصول الموزع لباب بيته وقبل أداء ثمن الطلبية.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#F3BA63] text-sm mb-1.5">1. مهلة الاستبدال والاسترجاع:</h4>
+                <p className="text-[#B5A896]">
+                  نمنحكم مهلة <strong className="text-white">7 أيام كاملة</strong> ابتداءً من تاريخ استلام الطلبية لطلب استبدال أو استرجاع أي منتج إذا كان به عيب أو لم يكن مطابقاً للمواصفات المعلنة.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#F3BA63] text-sm mb-1.5">2. شروط قبول الاسترجاع:</h4>
+                <ul className="list-disc list-inside space-y-1 text-[#B5A896]">
+                  <li>أن يكون المنتج في عبوته الأصلية محكماً وغير متضرر بسوء الاستعمال.</li>
+                  <li>نظراً لطبيعة المنتجات العشبية والغذائية والزيوت، يجب ألا تكون القنينة أو العبوة قد استُهلكت بالكامل.</li>
+                  <li>تقديم رقم الطلب أو رقم الهاتف الذي تم به تسجيل الشراء.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#F3BA63] text-sm mb-1.5">3. تكاليف الشحن في حالة الاسترجاع:</h4>
+                <p className="text-[#B5A896]">
+                  إذا كان الخطأ صادراً من المتجر (منتج خاطئ أو تالف أثناء النقل)، فإن <strong className="text-[#10B981]">المتجر يتحمل كافة مصاريف الشحن ذهاباً وإياباً</strong> مجاناً دون أن يدفع الزبون درهماً واحداً.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#F3BA63] text-sm mb-1.5">4. استرداد الأموال:</h4>
+                <p className="text-[#B5A896]">
+                  يتم استرجاع المبلغ إما نقداً عبر شركة التوصيل أو عبر تحويل بنكي مباشر لحسابكم في غضون 24 إلى 48 ساعة بعد استلام وفحص المنتج المرتجع.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-[#F3BA63] text-sm mb-1.5">5. كيف تطلب الاسترجاع؟</h4>
+                <p className="text-[#B5A896]">
+                  يكفي مراسلتنا عبر الواتساب على الرقم المعتمد للمتجر (<span className="font-mono text-white" dir="ltr">{storeSettings.whatsapp || '+212 7 75 04 46 15'}</span>) مع ذكر رقم الطلب، وسيقوم فريقنا بخدمتكم فوراً.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-5 border-t border-[#213027] flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowReturnModal(false)}
+                className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm transition-all cursor-pointer shadow-lg"
               >
                 فهمت وموافق ✓
               </button>
