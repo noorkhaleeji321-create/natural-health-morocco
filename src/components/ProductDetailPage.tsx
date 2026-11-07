@@ -22,6 +22,7 @@ import { Product } from '../types';
 import { ProductCard } from './ProductCard';
 import { useStore } from '../context/StoreContext';
 import { formatImageUrl, handleImageError } from '../lib/utils';
+import { updateProductSeo } from '../utils/seo';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -50,12 +51,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const galleryImages = rawImages.length > 0 ? rawImages : [DEFAULT_FALLBACK_IMG];
 
-  // Reset states whenever product changes
+  // Reset states and update SEO metadata whenever product changes
   useEffect(() => {
     setActiveImageIndex(0);
     setQuantity(1);
     setAdded(false);
-  }, [product.id]);
+    updateProductSeo(product);
+  }, [product]);
 
   const handleNextImage = () => {
     setActiveImageIndex((prev) => (prev + 1) % galleryImages.length);

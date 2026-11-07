@@ -26,6 +26,7 @@ import { ProductsPage } from './components/ProductsPage';
 import { ProductDetailPage } from './components/ProductDetailPage';
 import { CartCheckoutPage } from './components/CartCheckoutPage';
 import { OrderTrackingPage } from './components/OrderTrackingPage';
+import { updateProductSeo, updateCategorySeo, updatePageSeo } from './utils/seo';
 
 // Loading Fallback
 const PageLoadingFallback: React.FC = () => (
@@ -78,29 +79,94 @@ function MainAppContent() {
     }
   }, [sessionAlert]);
 
-  // URL Hash sync
+  // URL routing & SEO sync (Path, Search Params, Hash & PopState)
   useEffect(() => {
-    const handleHashChange = () => {
+    const handleLocationChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash === '#admin') {
-        setCurrentPage('admin');
-        setActiveSection('admin');
-      } else if (hash === '#cart') {
-        setCurrentPage('cart');
-        setActiveSection('cart');
-      } else if (hash === '#order-tracking') {
-        setCurrentPage('order-tracking');
-        setActiveSection('order-tracking');
-      } else if (hash === '#products') {
+      const pathname = window.location.pathname.toLowerCase();
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryProductId = searchParams.get('product') || searchParams.get('id');
+      const queryCategory = searchParams.get('category');
+
+      // 1. Direct Product Detail URL: /product/:id or ?product=:id
+      let targetProductId = queryProductId;
+      if (!targetProductId && pathname.startsWith('/product/')) {
+        const rawId = window.location.pathname.substring('/product/'.length).replace(/\/$/, '');
+        targetProductId = decodeURIComponent(rawId);
+      }
+
+      if (targetProductId) {
+        const found = products.find((p) => p.id === targetProductId);
+        if (found) {
+          setSelectedProduct(found);
+          setCurrentPage('product-detail');
+          setActiveSection('products');
+          updateProductSeo(found);
+          return;
+        }
+      }
+
+      // 2. Direct Category URL: /category/:slug or ?category=:slug
+      let targetCategorySlug = queryCategory;
+      if (!targetCategorySlug && pathname.startsWith('/category/')) {
+        const rawSlug = window.location.pathname.substring('/category/'.length).replace(/\/$/, '');
+        targetCategorySlug = decodeURIComponent(rawSlug);
+      }
+
+      if (targetCategorySlug) {
+        const cat = categories.find((c) => c.slug === targetCategorySlug || c.name === targetCategorySlug);
+        const catName = cat ? cat.name : targetCategorySlug;
+        const catSlug = cat ? cat.slug : targetCategorySlug;
+        setProductsPageCategory(catName);
         setCurrentPage('products');
         setActiveSection('products');
+        updateCategorySeo(catName, catSlug);
+        return;
+      }
+
+      // 3. Other Pages & Routes
+      if (pathname === '/admin' || hash === '#admin') {
+        setCurrentPage('admin');
+        setActiveSection('admin');
+      } else if (pathname === '/cart' || hash === '#cart') {
+        setCurrentPage('cart');
+        setActiveSection('cart');
+        updatePageSeo('cart');
+      } else if (pathname === '/order-tracking' || hash === '#order-tracking') {
+        setCurrentPage('order-tracking');
+        setActiveSection('order-tracking');
+        updatePageSeo('order-tracking');
+      } else if (pathname === '/products' || hash === '#products') {
+        setProductsPageCategory(null);
+        setCurrentPage('products');
+        setActiveSection('products');
+        updatePageSeo('products');
+      } else if (pathname === '/policy' || pathname === '/terms') {
+        setCurrentPage('home');
+        setActiveSection('home');
+        updatePageSeo('policy');
+        setTimeout(() => {
+          const el = document.getElementById('terms-policy') || document.getElementById('contact');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        // Home page default
+        if (currentPage !== 'product-detail' || !selectedProduct) {
+          setCurrentPage('home');
+          setActiveSection('home');
+          updatePageSeo('home');
+        }
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    handleLocationChange();
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, [products, categories]);
 
   // Sync cart to localStorage
   useEffect(() => {
@@ -192,7 +258,7 @@ function MainAppContent() {
     return list.filter((p) => p.category === cat.name);
   }, [selectedCategory, products, categories]);
 
-  // Navigation handlers
+  // Navigation handlers with clean URL history and dynamic SEO
   const handleNavigate = (page: PageType, category?: string | null) => {
     setSearchQuery('');
 
@@ -200,29 +266,71 @@ function MainAppContent() {
       setProductsPageCategory(category || null);
       setCurrentPage('products');
       setActiveSection('products');
+      if (category) {
+        const cat = categories.find((c) => c.name === category || c.slug === category);
+        const slug = cat ? cat.slug : encodeURIComponent(category);
+        try {
+          window.history.pushState({ page: 'products', category }, '', `/category/${slug}`);
+        } catch {}
+        updateCategorySeo(category, slug);
+      } else {
+        try {
+          window.history.pushState({ page: 'products' }, '', '/products');
+        } catch {}
+        updatePageSeo('products');
+      }
     } else if (page === 'cart') {
       setCurrentPage('cart');
       setActiveSection('cart');
+      try {
+        window.history.pushState({ page: 'cart' }, '', '/cart');
+      } catch {}
+      updatePageSeo('cart');
     } else if (page === 'order-tracking') {
       setCurrentPage('order-tracking');
       setActiveSection('order-tracking');
+      try {
+        window.history.pushState({ page: 'order-tracking' }, '', '/order-tracking');
+      } catch {}
+      updatePageSeo('order-tracking');
     } else if (page === 'admin') {
       setCurrentPage('admin');
       setActiveSection('admin');
+      try {
+        window.history.pushState({ page: 'admin' }, '', '/#admin');
+      } catch {}
     } else {
+      setSelectedProduct(null);
       setCurrentPage('home');
       setActiveSection('home');
+      try {
+        window.history.pushState({ page: 'home' }, '', '/');
+      } catch {}
+      updatePageSeo('home');
     }
   };
 
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
     setCurrentPage('product-detail');
+    try {
+      window.history.pushState(
+        { page: 'product-detail', productId: product.id },
+        '',
+        `/product/${encodeURIComponent(product.id)}`
+      );
+    } catch {}
+    updateProductSeo(product);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackFromDetail = () => {
+    setSelectedProduct(null);
     setCurrentPage('products');
+    try {
+      window.history.pushState({ page: 'products' }, '', '/products');
+    } catch {}
+    updatePageSeo('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

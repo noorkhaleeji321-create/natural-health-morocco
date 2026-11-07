@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   X,
@@ -14,6 +14,7 @@ import { Product, Category } from '../types';
 import { ProductCard } from './ProductCard';
 import { ProductCardSkeleton } from './ProductCardSkeleton';
 import { useStore } from '../context/StoreContext';
+import { updateCategorySeo, updatePageSeo } from '../utils/seo';
 
 interface ProductsPageProps {
   products: Product[];
@@ -91,6 +92,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     return result;
   }, [products, selectedCategory, searchQuery, sortBy]);
 
+  // Dynamic SEO sync for Category or All Products catalog view
+  useEffect(() => {
+    if (selectedCategory) {
+      const cat = categories.find((c) => c.name === selectedCategory || c.slug === selectedCategory);
+      const slug = cat ? cat.slug : encodeURIComponent(selectedCategory);
+      updateCategorySeo(selectedCategory, slug, filteredAndSortedProducts.length);
+    } else {
+      updatePageSeo('products');
+    }
+  }, [selectedCategory, categories, filteredAndSortedProducts.length]);
+
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedCategory(null);
@@ -111,11 +123,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[#FAF5EC] font-['Cairo'] tracking-tight">
-            جميع منتجات محل عند سعيد
+            {selectedCategory ? `منتجات ${selectedCategory}` : 'جميع منتجات Natural Health Morocco'}
           </h1>
 
           <p className="text-xs sm:text-base text-[#A89C89] leading-relaxed max-w-2xl mx-auto">
-            تصفح أجود ما تجود به الطبيعة المغربية: عسل حر، توابل ملكية، زيوت نادرة، أعشاب جبلية، ومستحضرات الحمام المغربي التقليدي.
+            {selectedCategory
+              ? `تصفح أرقى وأجود منتجات ${selectedCategory} الطبيعية 100% والمضمونة مع التوصيل السريع والدفع عند الاستلام بالمغرب.`
+              : 'تصفح أجود ما تجود به الطبيعة المغربية: خلطات صحراوية، مراهم سم النحل، زيوت نادرة، أعشاب جبلية، ومستحضرات العناية الطبيعية.'}
           </p>
         </div>
 

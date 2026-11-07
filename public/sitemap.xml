@@ -1,53 +1,343 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <!-- Homepage -->
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Static Core Pages -->
   <url>
-    <loc>https://natural-health-morocco.vercel.app/</loc>
-    <lastmod>2026-10-29</lastmod>
+    <loc>https://natural-health-morocco.online/</loc>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-
-  <!-- Best Sellers -->
   <url>
-    <loc>https://natural-health-morocco.vercel.app/#best-sellers</loc>
-    <lastmod>2026-10-29</lastmod>
+    <loc>https://natural-health-morocco.online/products</loc>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Categories -->
   <url>
-    <loc>https://natural-health-morocco.vercel.app/#categories</loc>
-    <lastmod>2026-10-29</lastmod>
+    <loc>https://natural-health-morocco.online/order-tracking</loc>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Natural Health Guide Section -->
-  <url>
-    <loc>https://natural-health-morocco.vercel.app/#natural-wellness</loc>
-    <lastmod>2026-10-29</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- About Us -->
-  <url>
-    <loc>https://natural-health-morocco.vercel.app/#about</loc>
-    <lastmod>2026-10-29</lastmod>
-    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-
-  <!-- Payment Methods -->
   <url>
-    <loc>https://natural-health-morocco.vercel.app/#payment-methods</loc>
-    <lastmod>2026-10-29</lastmod>
+    <loc>https://natural-health-morocco.online/policy</loc>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Category: العناية الطبيعية بالأظافر -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/nail-care</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العناية الطبيعية لشعر  و البشرة الجافة -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/body-care</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: مستحضرات التجميل الطبيعية -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/natural-cosmetics</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العطور والروائح الطبيعية -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/natural-perfumes</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العناية بالفم والأسنان -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/oral-care</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: المكملات الطبيعية	 -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/natural-supplements</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: الأقنعة والوصفات الطبيعية	 -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/natural-masks</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: كريمات الطبيعية -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/natural-butters-creams</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: التدليك والاسترخاء	 -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/massage-relaxation</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: خلطات صحراوية طبيعية -->
+  <url>
+    <loc>https://natural-health-morocco.online/category/moroccan-sahara-blends</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Product: المسمنة السريعة Prise de Poids -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793979290284</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-001.webp.jpg</image:loc>
+      <image:title>المسمنة السريعة Prise de Poids</image:title>
+    </image:image>
+  </url>
+  <!-- Product: دهن سنام الجمل Bosse de Chameau -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793986356005</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-002.webp.jpg</image:loc>
+      <image:title>دهن سنام الجمل Bosse de Chameau</image:title>
+    </image:image>
+  </url>
+  <!-- Product: زبدة الحلبة المركزة والصافية EL HIKMA -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793990281372</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0015.webp.png</image:loc>
+      <image:title>زبدة الحلبة المركزة والصافية EL HIKMA</image:title>
+    </image:image>
+  </url>
+  <!-- Product: شحم ذروة الجمل graisse de chameau -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793990880994</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0038.webp.jpg</image:loc>
+      <image:title>شحم ذروة الجمل graisse de chameau</image:title>
+    </image:image>
+  </url>
+  <!-- Product: زيت 108 عشبة الهندي Sri Shivashakthi -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793991402122</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0016.webp.jpg</image:loc>
+      <image:title>زيت 108 عشبة الهندي Sri Shivashakthi</image:title>
+    </image:image>
+  </url>
+  <!-- Product: حمام الأسنان بالأعشاب غسول فم طبيعي -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793995821548</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0017.webp.png</image:loc>
+      <image:title>حمام الأسنان بالأعشاب غسول فم طبيعي</image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون شامبو صلب بالأعشاب الطبيعية -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793996173431</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0018.webp.jpg.jpg</image:loc>
+      <image:title>صابون شامبو صلب بالأعشاب الطبيعية</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مرهم سم النحل Meniscus -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793996427642</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0012.webp.jpeg</image:loc>
+      <image:title>مرهم سم النحل Meniscus</image:title>
+    </image:image>
+  </url>
+  <!-- Product: العكر الفاسي المغربي -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793996650808</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0014.webp.jpg</image:loc>
+      <image:title>العكر الفاسي المغربي</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم مضاد لفطريات الأظافر -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793997002999</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0010.webp.jpeg</image:loc>
+      <image:title>كريم مضاد لفطريات الأظافر</image:title>
+    </image:image>
+  </url>
+  <!-- Product:  ماء الكمأة - TRFUS  -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793998261848</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0047.webp</image:loc>
+      <image:title> ماء الكمأة - TRFUS </image:title>
+    </image:image>
+  </url>
+  <!-- Product: بلسم أبونيكي (Aboniki Balm -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793998750861</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0048.webp.jpg</image:loc>
+      <image:title>بلسم أبونيكي (Aboniki Balm</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مرهم شفاء القدمين Pieds Crevasses -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1793999890671</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-006.webp.jpeg</image:loc>
+      <image:title>مرهم شفاء القدمين Pieds Crevasses</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم البكبوكة Bokoboka Cream -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794000106136</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-007.webp.jpeg</image:loc>
+      <image:title>كريم البكبوكة Bokoboka Cream</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم فاريكوسيت Varikosette -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794000317433</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-008.webp.jpeg</image:loc>
+      <image:title>كريم فاريكوسيت Varikosette</image:title>
+    </image:image>
+  </url>
+  <!-- Product: رذاذ مسكن للآلام Pain Relief Spray -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794000991052</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0049.webp.jpg</image:loc>
+      <image:title>رذاذ مسكن للآلام Pain Relief Spray</image:title>
+    </image:image>
+  </url>
+  <!-- Product: بخاخ الأكزيما Eczema Spray -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794001484164</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0050.webp.jpg</image:loc>
+      <image:title>بخاخ الأكزيما Eczema Spray</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم مضاد للثآليل Crème Anti Verrues -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794001914135</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0051.webp.jpg</image:loc>
+      <image:title>كريم مضاد للثآليل Crème Anti Verrues</image:title>
+    </image:image>
+  </url>
+  <!-- Product: سموكصول SMOKSOL -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794054054683</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0052.webp.jpg</image:loc>
+      <image:title>سموكصول SMOKSOL</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم معالج Crème Réparatrice -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794054367783</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0025.webp.jpeg</image:loc>
+      <image:title>كريم معالج Crème Réparatrice</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مضاد لفطريات الأظافر 7 Days Anti-Fongique -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794055236630</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0053.webp.jpg</image:loc>
+      <image:title>مضاد لفطريات الأظافر 7 Days Anti-Fongique</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم نعومي ثلاثي المفعول Naomi Triple  -->
+  <url>
+    <loc>https://natural-health-morocco.online/product/prod-1794056009176</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0054.webp.jpg</image:loc>
+      <image:title>كريم نعومي ثلاثي المفعول Naomi Triple </image:title>
+    </image:image>
   </url>
 </urlset>
