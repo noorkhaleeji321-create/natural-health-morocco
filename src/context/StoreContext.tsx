@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Product,
   Category,
@@ -454,148 +454,156 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
   );
 };
 
-  // Reload all data from Server REST API + Firestore
+  const inFlightFetchRef = useRef<Promise<boolean> | null>(null);
+  const lastFetchTimestampRef = useRef<number>(0);
+
+  // Reload all data from Server REST API + Firestore (Optimized with request deduplication)
   const loadFromServer = useCallback(async (): Promise<boolean> => {
-    try {
-      // 1. Fetch from Local Node.js API (Bootstrap) for instant sub-second response
-      const dataPromise = api.getBootstrap();
-
-      // 2. Prepare Firestore query if configured
-      const firestorePromise = isFirebaseConfigured()
-        ? withTimeout(
-            Promise.all([
-              getDocs(collection(db, 'products')),
-              getDocs(collection(db, 'categories')),
-              getDocs(collection(db, 'orders')),
-              getDocs(collection(db, 'settings'))
-            ]),
-            10000,
-            'Firebase connection timeout during initial load'
-          ).catch((fErr) => {
-            console.warn('[StoreContext] Firestore sync notice:', fErr);
-            return null;
-          })
-        : Promise.resolve(null);
-
-      // Await local server data first to unblock UI immediately
-      const data = await dataPromise;
-      if (data) {
-        if (Array.isArray(data.products)) setProducts(data.products);
-        if (Array.isArray(data.categories)) setCategories(data.categories);
-        if (Array.isArray(data.orders)) setOrders(data.orders);
-        if (data.storeSettings) {
-          setStoreSettings((prev) => {
-            const merged = { ...prev, ...data.storeSettings };
-            if (!data.storeSettings.aboutImageUrl && prev.aboutImageUrl) {
-              merged.aboutImageUrl = prev.aboutImageUrl;
-            }
-            if (!data.storeSettings.logoUrl && prev.logoUrl) {
-              merged.logoUrl = prev.logoUrl;
-            }
-            return merged;
-          });
-        }
-        if (data?.customers) {
-          setCustomers((prev) => {
-            const serverIds = new Set(data.customers.map((c: any) => c.id));
-            const onlyLocal = prev.filter(c => !serverIds.has(c.id));
-            return [...data.customers, ...onlyLocal];
-          });
-        }
-        if (data?.sellers && data.sellers.length > 0) {
-          setSellers((prev) => {
-             const serverIds = new Set(data.sellers.map((s: any) => s.id));
-             const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-             return [...data.sellers, ...onlyLocal];
-          });
-        }
-        if (data?.stores && data.stores.length > 0) {
-          setStores((prev) => {
-            const serverIds = new Set(data.stores.map((s: any) => s.id));
-            const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-            return [...data.stores, ...onlyLocal];
-          });
-        }
-        if (data?.bankSettings) {
-          setBankSettings((prev) => ({ ...prev, ...data.bankSettings }));
-        }
-        if (data?.heroSlides && data.heroSlides.length > 0) {
-          setHeroSlides(data.heroSlides);
-        }
-        // Immediately unblock products skeleton
-        setIsLoadingProducts(false);
-      }
-
-      // Check Firestore results once completed
-      const firestoreSnaps = await firestorePromise;
-      if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
-        const [prodSnap, catSnap, orderSnap, settingsSnap] = firestoreSnaps;
-        const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-        const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-        const firestoreOrders = orderSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-        const settingsDoc = settingsSnap.docs.find((d: any) => d.id === 'main');
-        const bankDoc = settingsSnap.docs.find((d: any) => d.id === 'bank');
-        const heroDoc = settingsSnap.docs.find((d: any) => d.id === 'hero');
-
-        setIsFirestoreActive(true);
-        if (Array.isArray(firestoreProducts)) {
-          setProducts(firestoreProducts);
-        }
-        if (Array.isArray(firestoreCategories)) {
-          setCategories(firestoreCategories);
-        }
-        if (Array.isArray(firestoreOrders)) {
-          setOrders(firestoreOrders);
-        }
-        if (settingsDoc && settingsDoc.data()) {
-          const fSettings = settingsDoc.data();
-          setStoreSettings((prev) => {
-            const merged = { ...prev, ...fSettings };
-            if (!fSettings.aboutImageUrl && prev.aboutImageUrl) {
-              merged.aboutImageUrl = prev.aboutImageUrl;
-            }
-            if (!fSettings.logoUrl && prev.logoUrl) {
-              merged.logoUrl = prev.logoUrl;
-            }
-            return merged;
-          });
-        }
-        if (bankDoc && bankDoc.data()) {
-          const bSettings = bankDoc.data();
-          setBankSettings((prev) => ({ ...defaultBankSettings, ...prev, ...bSettings }));
-        }
-        if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
-          setHeroSlides(heroDoc.data().slides);
-        }
-      }
-
-      setIsLoadingProducts(false);
-      return true;
-    } catch (err) {
-      console.warn('Local database is running offline (Server sync skipped):', err);
-      setIsLoadingProducts(false);
-      return false;
+    if (inFlightFetchRef.current) {
+      return inFlightFetchRef.current;
     }
+
+    const fetchPromise = (async () => {
+      try {
+        // 1. Fetch from Server API (Bootstrap)
+        const dataPromise = api.getBootstrap();
+
+        // 2. Query Firestore if configured
+        const firestorePromise = isFirebaseConfigured()
+          ? withTimeout(
+              Promise.all([
+                getDocs(collection(db, 'products')),
+                getDocs(collection(db, 'categories')),
+                getDocs(collection(db, 'orders')),
+                getDocs(collection(db, 'settings'))
+              ]),
+              10000,
+              'Firebase connection timeout during initial load'
+            ).catch((fErr) => {
+              console.warn('[StoreContext] Firestore sync notice:', fErr);
+              return null;
+            })
+          : Promise.resolve(null);
+
+        // Await server data first to unblock UI
+        const data = await dataPromise;
+        if (data) {
+          if (Array.isArray(data.products) && data.products.length > 0) setProducts(data.products);
+          if (Array.isArray(data.categories) && data.categories.length > 0) setCategories(data.categories);
+          if (Array.isArray(data.orders)) setOrders(data.orders);
+          if (data.storeSettings) {
+            setStoreSettings((prev) => {
+              const merged = { ...prev, ...data.storeSettings };
+              if (!data.storeSettings.aboutImageUrl && prev.aboutImageUrl) {
+                merged.aboutImageUrl = prev.aboutImageUrl;
+              }
+              if (!data.storeSettings.logoUrl && prev.logoUrl) {
+                merged.logoUrl = prev.logoUrl;
+              }
+              return merged;
+            });
+          }
+          if (data?.customers) {
+            setCustomers((prev) => {
+              const serverIds = new Set(data.customers.map((c: any) => c.id));
+              const onlyLocal = prev.filter(c => !serverIds.has(c.id));
+              return [...data.customers, ...onlyLocal];
+            });
+          }
+          if (data?.sellers && data.sellers.length > 0) {
+            setSellers((prev) => {
+               const serverIds = new Set(data.sellers.map((s: any) => s.id));
+               const onlyLocal = prev.filter(s => !serverIds.has(s.id));
+               return [...data.sellers, ...onlyLocal];
+            });
+          }
+          if (data?.stores && data.stores.length > 0) {
+            setStores((prev) => {
+              const serverIds = new Set(data.stores.map((s: any) => s.id));
+              const onlyLocal = prev.filter(s => !serverIds.has(s.id));
+              return [...data.stores, ...onlyLocal];
+            });
+          }
+          if (data?.bankSettings) {
+            setBankSettings((prev) => ({ ...prev, ...data.bankSettings }));
+          }
+          if (data?.heroSlides && data.heroSlides.length > 0) {
+            setHeroSlides(data.heroSlides);
+          }
+          setIsLoadingProducts(false);
+        }
+
+        // Check Firestore results once completed
+        const firestoreSnaps = await firestorePromise;
+        if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
+          const [prodSnap, catSnap, orderSnap, settingsSnap] = firestoreSnaps;
+          const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+          const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+          const firestoreOrders = orderSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+          const settingsDoc = settingsSnap.docs.find((d: any) => d.id === 'main');
+          const bankDoc = settingsSnap.docs.find((d: any) => d.id === 'bank');
+          const heroDoc = settingsSnap.docs.find((d: any) => d.id === 'hero');
+
+          setIsFirestoreActive(true);
+          if (Array.isArray(firestoreProducts) && firestoreProducts.length > 0) {
+            setProducts(firestoreProducts);
+          }
+          if (Array.isArray(firestoreCategories) && firestoreCategories.length > 0) {
+            setCategories(firestoreCategories);
+          }
+          if (Array.isArray(firestoreOrders)) {
+            setOrders(firestoreOrders);
+          }
+          if (settingsDoc && settingsDoc.data()) {
+            const fSettings = settingsDoc.data();
+            setStoreSettings((prev) => {
+              const merged = { ...prev, ...fSettings };
+              if (!fSettings.aboutImageUrl && prev.aboutImageUrl) {
+                merged.aboutImageUrl = prev.aboutImageUrl;
+              }
+              if (!fSettings.logoUrl && prev.logoUrl) {
+                merged.logoUrl = prev.logoUrl;
+              }
+              return merged;
+            });
+          }
+          if (bankDoc && bankDoc.data()) {
+            const bSettings = bankDoc.data();
+            setBankSettings((prev) => ({ ...defaultBankSettings, ...prev, ...bSettings }));
+          }
+          if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
+            setHeroSlides(heroDoc.data().slides);
+          }
+        }
+
+        setIsLoadingProducts(false);
+        lastFetchTimestampRef.current = Date.now();
+        return true;
+      } catch (err) {
+        console.warn('Local database is running offline (Server sync skipped):', err);
+        setIsLoadingProducts(false);
+        return false;
+      } finally {
+        inFlightFetchRef.current = null;
+      }
+    })();
+
+    inFlightFetchRef.current = fetchPromise;
+    return fetchPromise;
   }, []);
 
-
-
-  // Sync on Mount, periodically, and on tab focus
+  // Sync on Mount, periodically (10 mins), and throttled on focus (> 5 mins)
   useEffect(() => {
-    const initAndLoad = async () => {
-      // 1. Load instantly from Node.js Express Server REST API
-      await loadFromServer();
-    };
-    initAndLoad();
+    loadFromServer();
 
-    // 2. Periodically refresh from server REST API every 3 minutes (lightweight, zero Firebase quota cost)
     const pollTimer = setInterval(() => {
       loadFromServer();
-    }, 180000);
+    }, 600000);
 
-    // 3. Refresh from server when user tabs back into the store
     const handleFocus = () => {
-      loadFromServer();
+      if (Date.now() - lastFetchTimestampRef.current > 300000) {
+        loadFromServer();
+      }
     };
     window.addEventListener('focus', handleFocus);
 
