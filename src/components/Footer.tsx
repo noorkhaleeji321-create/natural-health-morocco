@@ -329,8 +329,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => setShowAdminModal(true)}
-              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#1A2620] hover:bg-[#D97706] hover:text-white text-[#F3BA63] font-bold transition-all cursor-pointer shadow-xs"
-              title="دخول لوحة التحكم (Admin)"
+              className="text-inherit hover:text-inherit cursor-default p-0 bg-transparent border-0 inline"
             >
               ©
             </button>
