@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, RefreshCw, AlertCircle, Sparkles } from 'lucide-rea
 import { Category } from '../../types';
 import { ImageUploadField } from './ImageUploadField';
 import { formatImageUrl, handleImageError } from '../../lib/utils';
+import { useStore } from '../../context/StoreContext';
 
 interface AdminCategoriesTabProps {
   categories: Category[];
@@ -19,6 +20,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
   onDelete,
   showNotification,
 }) => {
+  const { products } = useStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
@@ -339,7 +341,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#101713] via-transparent to-transparent" />
                 <span className="absolute bottom-3 right-3 bg-[#101713]/90 text-[#F3BA63] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#28392F]">
-                  {c.count} منتج
+                  {products.filter((p) => (p.category || '').trim() === (c.name || '').trim() || (p.category || '').trim() === (c.slug || '').trim()).length} منتج
                 </span>
               </div>
               <div className="p-5">

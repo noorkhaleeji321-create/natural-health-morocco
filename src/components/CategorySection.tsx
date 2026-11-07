@@ -2,6 +2,7 @@ import React from 'react';
 import { Category } from '../types';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import { formatImageUrl, handleImageError } from '../lib/utils';
+import { useStore } from '../context/StoreContext';
 
 interface CategorySectionProps {
   categories: Category[];
@@ -16,9 +17,20 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onSelectCategory,
   onBrowseCategoryInProducts,
 }) => {
+  const { products } = useStore();
+
   if (!categories || categories.length === 0) {
     return null;
   }
+
+  // Pre-calculate real product count per category dynamically
+  const categoryCounts = new Map<string, number>();
+  (products || []).forEach((p) => {
+    if (p.category) {
+      const cName = p.category.trim();
+      categoryCounts.set(cName, (categoryCounts.get(cName) || 0) + 1);
+    }
+  });
 
   return (
     <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822]">
@@ -72,7 +84,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     {/* Badge */}
                     <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
                       <span className="bg-[#D97706] text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 sm:py-1 rounded-full shadow-lg border border-[#F59E0B]/30">
-                        {cat.count} منتج
+                        {categoryCounts.get(cat.name.trim()) ?? (cat.count || 0)} منتج
                       </span>
                     </div>
 
