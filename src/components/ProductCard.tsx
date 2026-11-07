@@ -67,8 +67,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             src={formatImageUrl(product.image)}
             alt={product.name}
             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
-            loading="lazy"
-            decoding="async"
+            loading="eager"
+            decoding="auto"
             onError={(e) => {
               handleImageError(e);
               const target = e.currentTarget as HTMLElement;
