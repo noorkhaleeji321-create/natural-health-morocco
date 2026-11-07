@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Basic global deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Products and Categories: Public read, Public write for now to ensure the user can save data
+    // (Since we don't have Firebase Auth set up with their specific UID yet)
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    // Orders: Anyone can create (customer), only admin should read/update
+    // Temporarily allowing read for the user to see their orders
+    match /orders/{orderId} {
+      allow create, read, update, delete: if true;
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+  }
+}
