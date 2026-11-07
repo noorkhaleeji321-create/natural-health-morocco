@@ -25,6 +25,7 @@ import {
 } from '../data/storeData';
 import { safeSetItem, safeGetItem } from '../utils/storage';
 import { api } from '../lib/api';
+import { preloadImages } from '../lib/utils';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -618,13 +619,19 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     return { success: false, count: 0, message: 'ميزة Firebase غير مفعلة حالياً.' };
   };
 
-  // Sync to LocalStorage safely on changes
+  // Sync to LocalStorage safely on changes & preload images for fast initial rendering
   useEffect(() => {
     safeSetItem(LOCAL_STORAGE_KEYS.PRODUCTS, products);
+    if (Array.isArray(products) && products.length > 0) {
+      preloadImages(products.map((p) => p.image));
+    }
   }, [products]);
 
   useEffect(() => {
     safeSetItem(LOCAL_STORAGE_KEYS.CATEGORIES, categories);
+    if (Array.isArray(categories) && categories.length > 0) {
+      preloadImages(categories.map((c) => c.image));
+    }
   }, [categories]);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 {
-  "backupTimestamp": "2026-11-07T09:55:36.206Z",
+  "backupTimestamp": "2026-11-07T17:17:24.363Z",
   "type": "automated_snapshot",
   "products": [],
   "categories": [],
@@ -19,7 +19,13 @@
     "shippingFee": 35,
     "currency": "DH",
     "announcementText": "🌿 مرحباً بكم في natural-morocco — جودة أصيلة وتوصيل لجميع مدن المغرب 🇲🇦",
-    "adminPin": "",
+    "adminPin": "0669149962aA@",
+    "aboutImageUrl": "",
+    "aboutBadgeYears": "25+",
+    "aboutBadgeTitle": "سنة من العطاء والأمانة",
+    "aboutBadgeSubtitle": "خدمة العائلات بأجود أنواع العطارة",
+    "aboutStoryP1": "تأسس متجر natural-morocco من قلب دروب وأسواق المغرب العريقة، لنضع بين أيديكم أجود أنواع المنتجات الطبيعية، الزيوت النقية، الأعشاب والمراهم العناية الصحية المنتقاة بعناية فائقة.",
+    "aboutStoryP2": "نحرص على انتقاء منتجاتنا مباشرة من كبار النحّالين في الأطلس، وتعاونيات زيت الأركان بسوس، ومزارع الزعفران بتالوين، لنضمن لكم نقاوة طبيعية 100% خالية من أي مواد حافظة أو إضافات كيميائية، مع التزامنا التام بالأمانة والمشورة الصادقة.",
     "showHeroSlider": true
   },
   "bankSettings": {
@@ -29,16 +35,16 @@
     "instructions": "يرجى اختيار طريقة الدفع المناسبة: الدفع نقداً عند الاستلام، البطاقة البنكية، بايبال، أو التحويل البنكي.",
     "isBankTransferEnabled": true,
     "isCodEnabled": true,
-    "isCardEnabled": true,
-    "isPaypalEnabled": true,
+    "isCardEnabled": false,
+    "isPaypalEnabled": false,
     "paymentMode": "sandbox",
-    "paddleVendorId": "123456",
-    "paddleClientToken": "live_sample_token",
-    "paddleApiKey": "pdl_sample_key",
-    "cardPublishableKey": "pdl_sample_key",
-    "cardSecretKey": "pdl_sample_secret",
-    "paypalClientId": "client_id_sample",
-    "paypalClientSecret": "test"
+    "paddleVendorId": "",
+    "paddleClientToken": "",
+    "paddleApiKey": "",
+    "cardPublishableKey": "",
+    "cardSecretKey": "",
+    "paypalClientId": "",
+    "paypalClientSecret": ""
   },
   "heroSlides": [
     {
