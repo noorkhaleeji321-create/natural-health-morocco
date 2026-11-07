@@ -958,7 +958,16 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       return filtered;
     });
 
-    // 2. Sync to Backend
+    // 2. Persist in Firestore
+    if (isFirebaseConfigured()) {
+      await syncFirestoreWrite(
+        OperationType.DELETE,
+        `orders/${orderId}`,
+        () => deleteDoc(doc(db, 'orders', orderId))
+      );
+    }
+
+    // 3. Sync to Backend
     try {
       await api.deleteOrder(orderId);
       
