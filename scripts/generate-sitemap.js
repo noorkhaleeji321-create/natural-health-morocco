@@ -7,7 +7,7 @@ import path from 'path';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
-const BASE_URL = 'https://natural-health-morocco.online';
+const BASE_URL = 'https://www.natural-health-morocco.online';
 const TODAY = new Date().toISOString().split('T')[0];
 
 function escapeXml(unsafe) {

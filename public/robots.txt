@@ -1,5 +1,5 @@
 # Robots.txt for Natural Health Morocco
-# https://natural-health-morocco.online
+# https://www.natural-health-morocco.online/
 
 User-agent: *
 Allow: /
@@ -19,4 +19,4 @@ Disallow: /checkout
 Disallow: /api/
 
 # Canonical XML Sitemap
-Sitemap: https://natural-health-morocco.online/sitemap.xml
+Sitemap: https://www.natural-health-morocco.online/sitemap.xml

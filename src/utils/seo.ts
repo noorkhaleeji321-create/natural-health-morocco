@@ -5,7 +5,7 @@
  */
 import { Product } from '../types';
 
-export const BASE_SITE_URL = 'https://natural-health-morocco.online';
+export const BASE_SITE_URL = 'https://www.natural-health-morocco.online';
 export const DEFAULT_OG_IMAGE = `${BASE_SITE_URL}/assets/aistudio/WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg`;
 
 export const DEFAULT_META = {
