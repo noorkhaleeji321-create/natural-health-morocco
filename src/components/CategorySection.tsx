@@ -27,7 +27,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         <div className="relative w-full overflow-hidden py-2 mx-0 mb-0" dir="ltr">
           {/* Continuous Moving Track from Left to Right - Always Filled & Visible */}
           <div className="animate-scroll-ltr flex gap-3 sm:gap-5 py-2 w-max">
-            {[...categories, ...categories, ...categories, ...categories].map((cat, index) => {
+            {[...categories, ...categories].map((cat, index) => {
               const isSelected = selectedCategory === cat.slug;
               const formattedImg = formatImageUrl(cat.image);
               return (

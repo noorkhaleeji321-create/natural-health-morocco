@@ -68,6 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             alt={product.name}
             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               handleImageError(e);
               const target = e.currentTarget as HTMLElement;
