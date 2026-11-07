@@ -1,0 +1,95 @@
+{
+  "backupTimestamp": "2026-11-07T08:08:03.053Z",
+  "type": "automated_snapshot",
+  "products": [],
+  "categories": [],
+  "orders": [],
+  "customers": [],
+  "storeSettings": {
+    "storeName": "natural-morocco",
+    "storeSlogan": "منتجات وزيوت وأعشاب طبيعية صحراوية ومراهم أصلية 100%",
+    "logoUrl": "/assets/aistudio/WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg",
+    "phone": "+212 7 75 04 46 15",
+    "whatsapp": "+212 7 75 04 46 15",
+    "address": "المملكة المغربية - التوصيل متوفر لجميع المدن",
+    "city": "التوصيل متوفر لجميع مدن المغرب",
+    "openingHours": "يومياً من 9:00 صباحاً حتى 10:00 مساءً",
+    "email": "aiwebcraft6@gmail.com",
+    "freeShippingThreshold": 250,
+    "shippingFee": 35,
+    "currency": "DH",
+    "announcementText": "🌿 مرحباً بكم في natural-morocco — جودة أصيلة وتوصيل لجميع مدن المغرب 🇲🇦",
+    "adminPin": "",
+    "showHeroSlider": true
+  },
+  "bankSettings": {
+    "bankName": "التجاري وفا بنك (Attijariwafa Bank)",
+    "accountHolder": "natural-morocco",
+    "rib": "007 780 0001234567890123 45",
+    "instructions": "يرجى اختيار طريقة الدفع المناسبة: الدفع نقداً عند الاستلام، البطاقة البنكية، بايبال، أو التحويل البنكي.",
+    "isBankTransferEnabled": true,
+    "isCodEnabled": true,
+    "isCardEnabled": true,
+    "isPaypalEnabled": true,
+    "paymentMode": "sandbox",
+    "paddleVendorId": "123456",
+    "paddleClientToken": "live_sample_token",
+    "paddleApiKey": "pdl_sample_key",
+    "cardPublishableKey": "pdl_sample_key",
+    "cardSecretKey": "pdl_sample_secret",
+    "paypalClientId": "client_id_sample",
+    "paypalClientSecret": "test"
+  },
+  "heroSlides": [
+    {
+      "id": "slide-1",
+      "title": "عطارة مغربية أصيلة",
+      "subtitle": "من قلب الأسواق العريقة",
+      "tag": "طبيعي 100%",
+      "image": "/assets/images/hero_spices_1793739545710.jpg",
+      "badge": "جودة ملكية",
+      "ctaText": "تسوق الآن",
+      "ctaTarget": "#best-sellers"
+    },
+    {
+      "id": "slide-2",
+      "title": "بخور وعطور ملكية",
+      "subtitle": "روائح تأخذك لعالم آخر",
+      "tag": "عطور فاخرة",
+      "image": "/assets/images/hero_perfume_1793739561627.jpg",
+      "badge": "أصالة وتميز",
+      "ctaText": "اكتشف المزيد",
+      "ctaTarget": "#categories"
+    },
+    {
+      "id": "slide-3",
+      "title": "منصة العطارين",
+      "subtitle": "طبيعة وجودة في مكان واحد",
+      "tag": "جودة مضمونة",
+      "image": "/assets/images/hero_banner_1793739575199.jpg",
+      "badge": "خدمة متميزة",
+      "ctaText": "اطلب الآن",
+      "ctaTarget": "#best-sellers"
+    },
+    {
+      "id": "slide-4",
+      "title": "عسل حر وأعشاب برية",
+      "subtitle": "كنوز جبال الأطلس",
+      "tag": "منتجات طبيعية",
+      "image": "/assets/images/hero_honey_tea_1793739587352.jpg",
+      "badge": "من الطبيعة إليك",
+      "ctaText": "تسوق الآن",
+      "ctaTarget": "#new-arrivals"
+    },
+    {
+      "id": "slide-5",
+      "title": "تمور وفواكه جافة",
+      "subtitle": "طاقة وحيوية طبيعية",
+      "tag": "فواكه مختارة",
+      "image": "/assets/images/hero_dates_honey_1793739602965.jpg",
+      "badge": "صحي ولذيذ",
+      "ctaText": "اكتشف",
+      "ctaTarget": "#categories"
+    }
+  ]
+}
