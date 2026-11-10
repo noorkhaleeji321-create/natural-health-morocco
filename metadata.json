@@ -1,0 +1,6 @@
+{
+  "name": "natural-morocco",
+  "description": "متجر natural-morocco الطبيعي بالمغرب - أجود المنتجات الطبيعية والزيوت والمراهم الصحية والأعشاب الطبيعية 100%.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

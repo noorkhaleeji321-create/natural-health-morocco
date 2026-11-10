@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Store product details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "unit": { "type": "string" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "inStock": { "type": "boolean" },
+        "stockCount": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewsCount": { "type": "number" },
+        "isBestSeller": { "type": "boolean" },
+        "sellerId": { "type": "string" },
+        "storeId": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "pending_review", "approved", "rejected", "out_of_stock", "archived"] }
+      },
+      "required": ["id", "name", "price", "category", "image"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customer": { "type": "object" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "customer", "items", "total", "status"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "count": { "type": "number" }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Global store settings",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "Product",
+      "description": "Collection of all products"
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Collection of store categories"
+    },
+    "orders": {
+      "schema": "Order",
+      "description": "Collection of customer orders"
+    },
+    "settings": {
+      "schema": "StoreSettings",
+      "description": "Global settings document"
+    }
+  }
+}

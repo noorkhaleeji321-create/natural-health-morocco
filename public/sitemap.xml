@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Static Core Pages -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.natural-health-morocco.online/products</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.natural-health-morocco.online/order-tracking</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.natural-health-morocco.online/policy</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Category: العناية الطبيعية بالصحة والجمال -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-health-beauty</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العناية بالشعر وفروة الرأس -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/hair-care</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: مستحضرات العناية بالبشرة والوجه -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/facial-skin-care</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: الكريمات والزبدات الطبيعية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-butters-creams</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العناية بالجسم  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/body-care</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: المكملات الطبيعية والعافية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-supplements</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: الأقنعة والوصفات الطبيعية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-masks</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: العناية بالفم والأسنان -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-oral-care</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: التدليك والاسترخاء -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/massage-relaxation</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: خلطات صحراوية طبيعية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/moroccan-saharan-mixes</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: مستحضرات التجميل والعطور الطبيعية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-cosmetics-perfumes</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Category: الزيوت الطبيعية النقية -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/category/natural-oils</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Product: المسمنة السريعة Prise de Poids زيادة الوزن بطريقة طبيعية: -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793979290284</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-001.webp.jpg</image:loc>
+      <image:title>المسمنة السريعة Prise de Poids زيادة الوزن بطريقة طبيعية:</image:title>
+    </image:image>
+  </url>
+  <!-- Product: دهن سنام الجمل Bosse de Chameau تخفيف آلام المفاصل المرتبطة بالركبة، الظهر، الرقبة، والأكتاف. -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793986356005</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0064.webp</image:loc>
+      <image:title>دهن سنام الجمل Bosse de Chameau تخفيف آلام المفاصل المرتبطة بالركبة، الظهر، الرقبة، والأكتاف.</image:title>
+    </image:image>
+  </url>
+  <!-- Product: زبدة الحلبة المركزة EL HIKMA للعناية بالبشرة والجسم وتسمين وشد وتكبير بعض مناطق الجسم -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793990281372</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0015.webp.png</image:loc>
+      <image:title>زبدة الحلبة المركزة EL HIKMA للعناية بالبشرة والجسم وتسمين وشد وتكبير بعض مناطق الجسم</image:title>
+    </image:image>
+  </url>
+  <!-- Product: شحم ذروة الجمل graisse de chameau تكبير وشد المناطق الأنثوية الأرداف والصدر 3x1  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793990880994</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0038.webp.jpg</image:loc>
+      <image:title>شحم ذروة الجمل graisse de chameau تكبير وشد المناطق الأنثوية الأرداف والصدر 3x1 </image:title>
+    </image:image>
+  </url>
+  <!-- Product: زيت 108 عشبة الهندي Sri Shivashakthi خالٍ من المواد الكيميائية الضارة طبيعي 100% -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793991402122</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0016.webp.jpg</image:loc>
+      <image:title>زيت 108 عشبة الهندي Sri Shivashakthi خالٍ من المواد الكيميائية الضارة طبيعي 100%</image:title>
+    </image:image>
+  </url>
+  <!-- Product: حمام الأسنان بالأعشاب غسول فم طبيعي ينعش رائحة الفم يقضي على الروائح الكريهة -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793995821548</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0017.webp.png</image:loc>
+      <image:title>حمام الأسنان بالأعشاب غسول فم طبيعي ينعش رائحة الفم يقضي على الروائح الكريهة</image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون شامبو صلب بالأعشاب الطبيعية تقوية بصيلات الشعر الضعيفة والحد من تساقطه -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793996173431</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0018.webp.jpg.jpg</image:loc>
+      <image:title>صابون شامبو صلب بالأعشاب الطبيعية تقوية بصيلات الشعر الضعيفة والحد من تساقطه</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مرهم سم النحل Meniscus يساعد في تهدئة تشنجات العضلات المجهدة وتخفيف تيبسها وتورمها -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793996427642</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0012.webp.jpeg</image:loc>
+      <image:title>مرهم سم النحل Meniscus يساعد في تهدئة تشنجات العضلات المجهدة وتخفيف تيبسها وتورمها</image:title>
+    </image:image>
+  </url>
+  <!-- Product: العكر الفاسي المغربي يمنح الشفاه والخدود لوناً وردياً أو أحمراً جذاباً وطبيعياً يدوم طويلاً -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793996650808</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0014.webp.jpg</image:loc>
+      <image:title>العكر الفاسي المغربي يمنح الشفاه والخدود لوناً وردياً أو أحمراً جذاباً وطبيعياً يدوم طويلاً</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم مضاد لفطريات الأظافر يساهم بشكل أساسي في مكافحة الفطريات التي تصيب الظفر -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793997002999</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0010.webp.jpeg</image:loc>
+      <image:title>كريم مضاد لفطريات الأظافر يساهم بشكل أساسي في مكافحة الفطريات التي تصيب الظفر</image:title>
+    </image:image>
+  </url>
+  <!-- Product:  ماء الكمأة - TRFUS يقدم عدة مزايا صحية وتلطيفية للعين -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793998261848</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0047.webp</image:loc>
+      <image:title> ماء الكمأة - TRFUS يقدم عدة مزايا صحية وتلطيفية للعين</image:title>
+    </image:image>
+  </url>
+  <!-- Product: بلسم أبونيكي Aboniki Balm يساعد على تشتيت إشارات الألم وتخفيف الانزعاج -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793998750861</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0058.webp.jpg</image:loc>
+      <image:title>بلسم أبونيكي Aboniki Balm يساعد على تشتيت إشارات الألم وتخفيف الانزعاج</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مرهم تشققات القدمين Pieds Crevasses علاج جفاف وتشققات الكعبين والقدمين الشديدة -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1793999890671</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-006.webp.jpeg</image:loc>
+      <image:title>مرهم تشققات القدمين Pieds Crevasses علاج جفاف وتشققات الكعبين والقدمين الشديدة</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم البكبوكة Bokoboka Cream  زيادة حجم وامتلاء منطقتي الصدر والمؤخرة والأرداف بشكل طبيعي -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794000106136</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-007.webp.jpeg</image:loc>
+      <image:title>كريم البكبوكة Bokoboka Cream  زيادة حجم وامتلاء منطقتي الصدر والمؤخرة والأرداف بشكل طبيعي</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم فاريكوسيت Varikosette للعناية اليومية بالبشرة في منطقة الساقين والقدمين -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794000317433</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-008.webp.jpeg</image:loc>
+      <image:title>كريم فاريكوسيت Varikosette للعناية اليومية بالبشرة في منطقة الساقين والقدمين</image:title>
+    </image:image>
+  </url>
+  <!-- Product: رذاذ مسكن للآلام Pain Relief Spray تركيبة طبيعية قوية بتركيز 20% من عشبة الأرنيكا -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794000991052</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0049.webp.jpg</image:loc>
+      <image:title>رذاذ مسكن للآلام Pain Relief Spray تركيبة طبيعية قوية بتركيز 20% من عشبة الأرنيكا</image:title>
+    </image:image>
+  </url>
+  <!-- Product: بخاخ الأكزيما Eczema Spray للبشرة الحساسة التي تعاني من الأعراض المصاحبة للأكزيما والتهاب الجلد  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794001484164</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0050.webp.jpg</image:loc>
+      <image:title>بخاخ الأكزيما Eczema Spray للبشرة الحساسة التي تعاني من الأعراض المصاحبة للأكزيما والتهاب الجلد </image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم مضاد للثآليل Crème Anti Verrues مخصص لإزالة الثآليل التي تظهر على اليدين والقدمين -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794001914135</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0051.webp.jpg</image:loc>
+      <image:title>كريم مضاد للثآليل Crème Anti Verrues مخصص لإزالة الثآليل التي تظهر على اليدين والقدمين</image:title>
+    </image:image>
+  </url>
+  <!-- Product: سموكصول SMOKSOL يعمل على تقليل وتثبيط الرغبة الملحة في التدخين (محاربة الـ Cravings). -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794054054683</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0052.webp.jpg</image:loc>
+      <image:title>سموكصول SMOKSOL يعمل على تقليل وتثبيط الرغبة الملحة في التدخين (محاربة الـ Cravings).</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم معالج Crème Réparatrice يعمل على تخفيف التهيج الموضعي الحكة المتضررة أو الجافة في الجسم -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794054367783</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0025.webp.jpeg</image:loc>
+      <image:title>كريم معالج Crème Réparatrice يعمل على تخفيف التهيج الموضعي الحكة المتضررة أو الجافة في الجسم</image:title>
+    </image:image>
+  </url>
+  <!-- Product: مضاد لفطريات الأظافر 7 Days Anti-Fongique يعمل كمضاد لفطريات أظافر اليدين والقدمين -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794055236630</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0053.webp.jpg</image:loc>
+      <image:title>مضاد لفطريات الأظافر 7 Days Anti-Fongique يعمل كمضاد لفطريات أظافر اليدين والقدمين</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كريم نعومي ثلاثي المفعول Naomi Triple يعزز العمل كمضاد للجراثيم والفطريات -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794056009176</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://raw.githubusercontent.com/noorkhaleeji321-create/natural-health-morocco_photo/main/product-0054.webp.jpg</image:loc>
+      <image:title>كريم نعومي ثلاثي المفعول Naomi Triple يعزز العمل كمضاد للجراثيم والفطريات</image:title>
+    </image:image>
+  </url>
+  <!-- Product: شامبو للقمل والصيبان (Anti-Poux et Lentes يعتمد المنتج الطبيعي على آلية ميكانيكية وفيزيائية لخنق القمل -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794121673064</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0056.webp</image:loc>
+      <image:title>شامبو للقمل والصيبان (Anti-Poux et Lentes يعتمد المنتج الطبيعي على آلية ميكانيكية وفيزيائية لخنق القمل</image:title>
+    </image:image>
+  </url>
+  <!-- Product: كولاجين للمفاصل والبشرة Collagen Joint Complex تحسين مرونة الجلد وتقليل التجاعيد -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794121956467</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0055.webp</image:loc>
+      <image:title>كولاجين للمفاصل والبشرة Collagen Joint Complex تحسين مرونة الجلد وتقليل التجاعيد</image:title>
+    </image:image>
+  </url>
+  <!-- Product: دهن سنام الجمل GRAISSE DE CHAMEAU مخصص لتخفيف الآلام  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794123895175</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0057.webp.webp</image:loc>
+      <image:title>دهن سنام الجمل GRAISSE DE CHAMEAU مخصص لتخفيف الآلام </image:title>
+    </image:image>
+  </url>
+  <!-- Product: زيت الحلبة يساعد على شد وتكبير الأرداف والصدر بشكل طبيعي مع ترطيب البشرة بعمق -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794161748490</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0060.webp.webp</image:loc>
+      <image:title>زيت الحلبة يساعد على شد وتكبير الأرداف والصدر بشكل طبيعي مع ترطيب البشرة بعمق</image:title>
+    </image:image>
+  </url>
+  <!-- Product:  زيت السدر (Huile de Sidr)  للعناية بالشعر وفروة الرأس من مستخلصات نبات السدر التقليدي -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794169376999</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0062.webp.jpg</image:loc>
+      <image:title> زيت السدر (Huile de Sidr)  للعناية بالشعر وفروة الرأس من مستخلصات نبات السدر التقليدي</image:title>
+    </image:image>
+  </url>
+  <!-- Product: خل التين الشوكي Vinaigre de Figue de Barbarie دعم صحة الجهاز الهضمي  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794169895442</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0061.webp.jpg</image:loc>
+      <image:title>خل التين الشوكي Vinaigre de Figue de Barbarie دعم صحة الجهاز الهضمي </image:title>
+    </image:image>
+  </url>
+  <!-- Product: زيت الحنظل (Huile de Coloquinte) لتخفيف الأوجاع والآلام المختلفة -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794209854346</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0063.webp.jpg</image:loc>
+      <image:title>زيت الحنظل (Huile de Coloquinte) لتخفيف الأوجاع والآلام المختلفة</image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون النيلة الزرقاء المغربي (Savon Nila Bleu)، صابون طبيعي مستوحى من طقوس الجمال المغربي التقليدي.  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794235782995</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0069.webp.jpg</image:loc>
+      <image:title>صابون النيلة الزرقاء المغربي (Savon Nila Bleu)، صابون طبيعي مستوحى من طقوس الجمال المغربي التقليدي. </image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون الطماطم (SAVON À LA TOMATE) صابون طبيعي يهدف إلى العناية بالبشرة.  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794235999053</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0068.webp.jpg</image:loc>
+      <image:title>صابون الطماطم (SAVON À LA TOMATE) صابون طبيعي يهدف إلى العناية بالبشرة. </image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون العكر الفاسي الطبيعي (Savon de Akar Fassi) منتج مغربي تقليدي للعناية بالبشرة (دم الغزال) -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794238065905</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0067.webp.jpg</image:loc>
+      <image:title>صابون العكر الفاسي الطبيعي (Savon de Akar Fassi) منتج مغربي تقليدي للعناية بالبشرة (دم الغزال)</image:title>
+    </image:image>
+  </url>
+  <!-- Product: صابون السدر الطبيعي (Savon De Jujubier - Savon Naturel) المصنوع الغني بالفوائد للبشرة -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794238389664</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0066.webp.jpg</image:loc>
+      <image:title>صابون السدر الطبيعي (Savon De Jujubier - Savon Naturel) المصنوع الغني بالفوائد للبشرة</image:title>
+    </image:image>
+  </url>
+  <!-- Product:  صابون الكركم الطبيعي (Savon De Curcuma / Savon Naturel) تفتيح البشرة وتوحيد لونها وتقليل التصبغات،  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794238754991</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0065.webp.jpg</image:loc>
+      <image:title> صابون الكركم الطبيعي (Savon De Curcuma / Savon Naturel) تفتيح البشرة وتوحيد لونها وتقليل التصبغات، </image:title>
+    </image:image>
+  </url>
+  <!-- Product: زيت الترهلات Huile de vergeture زيت طبيعي مخصص للعلامات التمدد وترطيبها خلال فترة الحمل  -->
+  <url>
+    <loc>https://www.natural-health-morocco.online/product/prod-1794240856325</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://cdn.jsdelivr.net/gh/noorkhaleeji321-create/natural-health-morocco_photo@main/product-0071.webp.jpg</image:loc>
+      <image:title>زيت الترهلات Huile de vergeture زيت طبيعي مخصص للعلامات التمدد وترطيبها خلال فترة الحمل </image:title>
+    </image:image>
+  </url>
+</urlset>

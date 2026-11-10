@@ -1,0 +1,22 @@
+# Robots.txt for Natural Health Morocco
+# https://www.natural-health-morocco.online/
+
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /product/
+Allow: /category/
+Allow: /order-tracking
+Allow: /policy
+Allow: /assets/
+Allow: /images/
+
+# Prevent crawling of private/internal administration & transactional routes
+Disallow: /admin
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /api/
+
+# Canonical XML Sitemap
+Sitemap: https://www.natural-health-morocco.online/sitemap.xml
