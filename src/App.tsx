@@ -17,12 +17,10 @@ import { safeGetItem, safeSetItem } from './utils/storage';
 import { Product, CartItem } from './types';
 import { Search, Sparkles, ArrowRight, ShieldAlert, X, Loader2 } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
+import { NaturalWellnessGuideSection } from './components/NaturalWellnessGuideSection';
+import { AboutSection } from './components/AboutSection';
+import { PaymentMethodsSection } from './components/PaymentMethodsSection';
 import { updateProductSeo, updateCategorySeo, updatePageSeo } from './utils/seo';
-
-// Lazy load below-the-fold homepage sections for ultra-low initial bundle size and instant FCP
-const NaturalWellnessGuideSection = lazy(() => import('./components/NaturalWellnessGuideSection').then((m) => ({ default: m.NaturalWellnessGuideSection })));
-const AboutSection = lazy(() => import('./components/AboutSection').then((m) => ({ default: m.AboutSection })));
-const PaymentMethodsSection = lazy(() => import('./components/PaymentMethodsSection').then((m) => ({ default: m.PaymentMethodsSection })));
 
 // Code Splitting & Dynamic Lazy Imports for secondary page routes only
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
@@ -368,90 +366,92 @@ function MainAppContent() {
       />
 
       <main className="flex-1">
-        <Suspense fallback={<PageLoadingFallback />}>
-          {sessionAlert && (
-            <div className="bg-[#2D1208] border-b border-[#D97706]/50 px-4 py-3 text-center animate-in fade-in slide-in-from-top duration-300">
-              <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-[#FDE68A]">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-[#F59E0B] shrink-0 animate-pulse" />
-                  <span>{sessionAlert}</span>
+        {sessionAlert && (
+          <div className="bg-[#2D1208] border-b border-[#D97706]/50 px-4 py-3 text-center animate-in fade-in slide-in-from-top duration-300">
+            <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-[#FDE68A]">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-[#F59E0B] shrink-0 animate-pulse" />
+                <span>{sessionAlert}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSessionAlert(null)}
+                className="text-[#FDE68A]/70 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                title="إغلاق التنبيه"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search results view */}
+        {searchQuery.trim() && currentPage === 'home' ? (
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div className="flex items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 pb-3 sm:pb-4 border-b border-[#212F28]">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D97706] mb-1">
+                  <Search className="w-3.5 h-3.5" />
+                  <span>نتائج البحث المباشر</span>
                 </div>
+                <h2 className="text-xl sm:text-3xl font-black text-[#F3EFE6] font-['Cairo']">
+                  نتائج البحث عن: &ldquo;{searchQuery}&rdquo;
+                </h2>
+                <p className="text-xs sm:text-sm text-[#A39683] mt-1">
+                  تم العثور على {searchFilteredProducts.length} منتج متطابق
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => setSessionAlert(null)}
-                  className="text-[#FDE68A]/70 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
-                  title="إغلاق التنبيه"
+                  onClick={() => handleNavigate('products')}
+                  className="hidden sm:inline-flex items-center gap-1.5 bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  الانتقال لصفحة المنتجات
+                  <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Search results view */}
-          {searchQuery.trim() && currentPage === 'home' ? (
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
-              <div className="flex items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 pb-3 sm:pb-4 border-b border-[#212F28]">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#D97706] mb-1">
-                    <Search className="w-3.5 h-3.5" />
-                    <span>نتائج البحث المباشر</span>
-                  </div>
-                  <h2 className="text-xl sm:text-3xl font-black text-[#F3EFE6] font-['Cairo']">
-                    نتائج البحث عن: &ldquo;{searchQuery}&rdquo;
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#A39683] mt-1">
-                    تم العثور على {searchFilteredProducts.length} منتج متطابق
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleNavigate('products')}
-                    className="hidden sm:inline-flex items-center gap-1.5 bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                  >
-                    الانتقال لصفحة المنتجات
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                  </button>
-                </div>
+            {searchFilteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-[#111914] rounded-2xl border border-[#212E27]">
+                <p className="text-base text-[#D4C8B5] font-bold">
+                  لم يتم العثور على أي منتج يطابق بحثك &ldquo;{searchQuery}&rdquo;
+                </p>
+                <p className="text-xs text-[#8A7D6C] mt-2">
+                  جرب البحث بكلمات أخرى مثل: عسل، سدر، زعفران، أركان، حبة سوداء، كمون...
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-5 bg-[#D97706] text-white text-xs font-bold px-4 py-2 rounded-lg"
+                >
+                  إعادة ضبط البحث
+                </button>
               </div>
-
-              {searchFilteredProducts.length === 0 ? (
-                <div className="text-center py-16 bg-[#111914] rounded-2xl border border-[#212E27]">
-                  <p className="text-base text-[#D4C8B5] font-bold">
-                    لم يتم العثور على أي منتج يطابق بحثك &ldquo;{searchQuery}&rdquo;
-                  </p>
-                  <p className="text-xs text-[#8A7D6C] mt-2">
-                    جرب البحث بكلمات أخرى مثل: عسل، سدر، زعفران، أركان، حبة سوداء، كمون...
-                  </p>
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="mt-5 bg-[#D97706] text-white text-xs font-bold px-4 py-2 rounded-lg"
-                  >
-                    إعادة ضبط البحث
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {searchFilteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                      onViewDetails={handleViewProduct}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : currentPage === 'products' ? (
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
+                {searchFilteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={handleAddToCart}
+                    onViewDetails={handleViewProduct}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : currentPage === 'products' ? (
+          <Suspense fallback={<PageLoadingFallback />}>
             <ProductsPage
               products={products}
               onAddToCart={handleAddToCart}
               onViewProduct={handleViewProduct}
               initialCategory={productsPageCategory}
             />
-          ) : currentPage === 'product-detail' && selectedProduct ? (
+          </Suspense>
+        ) : currentPage === 'product-detail' && selectedProduct ? (
+          <Suspense fallback={<PageLoadingFallback />}>
             <ProductDetailPage
               product={selectedProduct}
               relatedProducts={relatedProducts}
@@ -459,7 +459,9 @@ function MainAppContent() {
               onAddToCart={handleAddToCart}
               onViewProduct={handleViewProduct}
             />
-          ) : currentPage === 'cart' ? (
+          </Suspense>
+        ) : currentPage === 'cart' ? (
+          <Suspense fallback={<PageLoadingFallback />}>
             <CartCheckoutPage
               items={cartItems}
               onUpdateQuantity={handleUpdateQuantity}
@@ -470,79 +472,83 @@ function MainAppContent() {
               onTrackOrder={handleTrackSpecificOrder}
               onNavigateToAccount={() => handleNavigate('home')}
             />
-          ) : currentPage === 'order-tracking' ? (
+          </Suspense>
+        ) : currentPage === 'order-tracking' ? (
+          <Suspense fallback={<PageLoadingFallback />}>
             <OrderTrackingPage
               initialOrderId={trackingOrderId}
               initialPhone={trackingPhone}
               onNavigateToProducts={() => handleNavigate('products')}
               onNavigateToHome={() => handleNavigate('home')}
             />
-          ) : currentPage === 'admin' ? (
+          </Suspense>
+        ) : currentPage === 'admin' ? (
+          <Suspense fallback={<PageLoadingFallback />}>
             <AdminDashboard
               onNavigateToHome={() => handleNavigate('home')}
               onNavigateToProducts={() => handleNavigate('products')}
             />
-          ) : (
-            /* Home Page */
-            <>
-              {storeSettings?.showHeroSlider !== false && (
-                <HeroSlider slides={heroSlides} />
-              )}
+          </Suspense>
+        ) : (
+          /* Home Page - 100% Synchronous, Zero Suspense fallback, Zero CLS */
+          <>
+            {storeSettings?.showHeroSlider !== false && (
+              <HeroSlider slides={heroSlides} />
+            )}
 
-              <TrustHighlights />
+            <TrustHighlights />
 
-              {selectedCategory && (
-                <div className="bg-[#1C1608] border-b border-[#D97706]/40 py-3 px-4 text-center">
-                  <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-xs sm:text-sm font-bold text-[#F3BA63]">
-                    <Sparkles className="w-4 h-4 text-[#D97706]" />
-                    <span>
-                      يتم الآن عرض منتجات تصنيف:{' '}
-                      <strong className="text-white">{categories.find((c) => c.slug === selectedCategory)?.name}</strong>
-                    </span>
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className="underline text-[#F59E0B] hover:text-[#FBBF24] ml-2 font-medium cursor-pointer"
-                    >
-                      (عرض كل المنتجات)
-                    </button>
-                  </div>
+            {selectedCategory && (
+              <div className="bg-[#1C1608] border-b border-[#D97706]/40 py-3 px-4 text-center">
+                <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-xs sm:text-sm font-bold text-[#F3BA63]">
+                  <Sparkles className="w-4 h-4 text-[#D97706]" />
+                  <span>
+                    يتم الآن عرض منتجات تصنيف:{' '}
+                    <strong className="text-white">{categories.find((c) => c.slug === selectedCategory)?.name}</strong>
+                  </span>
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="underline text-[#F59E0B] hover:text-[#FBBF24] ml-2 font-medium cursor-pointer"
+                  >
+                    (عرض كل المنتجات)
+                  </button>
                 </div>
-              )}
+              </div>
+            )}
 
-              <CategorySection
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-                onBrowseCategoryInProducts={(catName) => handleNavigate('products', catName)}
-              />
+            <CategorySection
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              onBrowseCategoryInProducts={(catName) => handleNavigate('products', catName)}
+            />
 
-              <BestSellersSection
-                products={filteredBestSellers}
-                isLoading={isLoadingProducts}
-                onAddToCart={handleAddToCart}
-                onViewDetails={handleViewProduct}
-                onViewAllProducts={() => handleNavigate('products')}
-              />
+            <BestSellersSection
+              products={filteredBestSellers}
+              isLoading={isLoadingProducts}
+              onAddToCart={handleAddToCart}
+              onViewDetails={handleViewProduct}
+              onViewAllProducts={() => handleNavigate('products')}
+            />
 
-              <NewArrivalsSection
-                products={filteredNewArrivals}
-                isLoading={isLoadingProducts}
-                onAddToCart={handleAddToCart}
-                onViewDetails={handleViewProduct}
-                onViewAllProducts={() => handleNavigate('products')}
-              />
+            <NewArrivalsSection
+              products={filteredNewArrivals}
+              isLoading={isLoadingProducts}
+              onAddToCart={handleAddToCart}
+              onViewDetails={handleViewProduct}
+              onViewAllProducts={() => handleNavigate('products')}
+            />
 
-              <NaturalWellnessGuideSection
-                onBrowseCategory={(catName) => handleNavigate('products', catName)}
-                onExploreProducts={() => handleNavigate('products')}
-              />
+            <NaturalWellnessGuideSection
+              onBrowseCategory={(catName) => handleNavigate('products', catName)}
+              onExploreProducts={() => handleNavigate('products')}
+            />
 
-              <AboutSection />
+            <AboutSection />
 
-              <PaymentMethodsSection />
-            </>
-          )}
-        </Suspense>
+            <PaymentMethodsSection />
+          </>
+        )}
       </main>
 
       {/* Cart Drawer */}
