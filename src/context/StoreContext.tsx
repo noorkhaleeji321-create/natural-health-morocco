@@ -27,20 +27,13 @@ import {
 import { safeSetItem, safeGetItem } from '../utils/storage';
 import { api } from '../lib/api';
 import { preloadImages } from '../lib/utils';
-import { db } from '../lib/firebase';
 import { 
-  collection, 
-  getDocs, 
-  getDoc,
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where,
-  setDoc,
-  serverTimestamp
-} from 'firebase/firestore';
+  fsGetDocs, 
+  fsGetDoc, 
+  fsSetDoc, 
+  fsUpdateDoc, 
+  fsDeleteDoc 
+} from '../lib/firebase';
 
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
@@ -479,9 +472,9 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         const firestorePromise = isFirebaseConfigured()
           ? withTimeout(
               Promise.all([
-                getDocs(collection(db, 'products')),
-                getDocs(collection(db, 'categories')),
-                getDocs(collection(db, 'settings'))
+                fsGetDocs('products'),
+                fsGetDocs('categories'),
+                fsGetDocs('settings')
               ]),
               8000,
               'Firebase connection timeout during initial load'
@@ -703,7 +696,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.WRITE,
         `products/${newId}`,
-        () => setDoc(doc(db, 'products', newId), cleanForFirestore(newProduct))
+        () => fsSetDoc('products', newId, cleanForFirestore(newProduct))
       );
     }
 
@@ -733,7 +726,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `products/${id}`,
-        () => updateDoc(doc(db, 'products', id), cleanForFirestore(updates))
+        () => fsUpdateDoc('products', id, cleanForFirestore(updates))
       );
     }
 
@@ -769,7 +762,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.DELETE,
         `products/${id}`,
-        () => deleteDoc(doc(db, 'products', id))
+        () => fsDeleteDoc('products', id)
       );
     }
 
@@ -806,7 +799,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.WRITE,
         `categories/${newId}`,
-        () => setDoc(doc(db, 'categories', newId), cleanForFirestore(newCategory))
+        () => fsSetDoc('categories', newId, cleanForFirestore(newCategory))
       );
     }
 
@@ -834,7 +827,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `categories/${id}`,
-        () => updateDoc(doc(db, 'categories', id), cleanForFirestore(updates))
+        () => fsUpdateDoc('categories', id, cleanForFirestore(updates))
       );
     }
 
@@ -858,7 +851,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.DELETE,
         `categories/${id}`,
-        () => deleteDoc(doc(db, 'categories', id))
+        () => fsDeleteDoc('categories', id)
       );
     }
 
@@ -879,7 +872,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.WRITE,
         'settings/hero',
-        () => setDoc(doc(db, 'settings', 'hero'), { slides: cleanForFirestore(slides) })
+        () => fsSetDoc('settings', 'hero', { slides: cleanForFirestore(slides) })
       );
     }
     api.updateHeroSlides(slides);
@@ -918,7 +911,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.WRITE,
         `orders/${newOrder.id}`,
-        () => setDoc(doc(db, 'orders', newOrder.id), cleanForFirestore(newOrder))
+        () => fsSetDoc('orders', newOrder.id, cleanForFirestore(newOrder))
       );
     }
 
@@ -973,7 +966,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `orders/${orderId}`,
-        () => updateDoc(doc(db, 'orders', orderId), cleanForFirestore(updates))
+        () => fsUpdateDoc('orders', orderId, cleanForFirestore(updates))
       );
     }
 
@@ -998,7 +991,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.DELETE,
         `orders/${orderId}`,
-        () => deleteDoc(doc(db, 'orders', orderId))
+        () => fsDeleteDoc('orders', orderId)
       );
     }
 
@@ -1114,7 +1107,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       const fsRes = await syncFirestoreWrite(
         OperationType.WRITE,
         'settings/bank',
-        () => setDoc(doc(db, 'settings', 'bank'), cleanForFirestore(nextSettings))
+        () => fsSetDoc('settings', 'bank', cleanForFirestore(nextSettings))
       );
       firestoreSaved = !!fsRes.firestoreSaved;
       firestoreError = fsRes.error || '';
@@ -1144,7 +1137,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       const fsRes = await syncFirestoreWrite(
         OperationType.WRITE,
         'settings/main',
-        () => setDoc(doc(db, 'settings', 'main'), cleanForFirestore(nextSettings))
+        () => fsSetDoc('settings', 'main', cleanForFirestore(nextSettings))
       );
       firestoreSaved = !!fsRes.firestoreSaved;
       firestoreError = fsRes.error || '';
@@ -1192,7 +1185,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     // 2. Try Direct Firebase Firestore Read for settings/main (Realtime Cloud Check)
     if (isFirebaseConfigured()) {
       try {
-        const settingsSnap = await getDoc(doc(db, 'settings', 'main'));
+        const settingsSnap = await fsGetDoc('settings', 'main');
         if (settingsSnap.exists()) {
           const fData = settingsSnap.data();
           const fPin = fData?.adminPin;
@@ -1389,7 +1382,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       await syncFirestoreWrite(
         OperationType.DELETE,
         `products/${productId}`,
-        () => deleteDoc(doc(db, 'products', productId))
+        () => fsDeleteDoc('products', productId)
       );
     }
 

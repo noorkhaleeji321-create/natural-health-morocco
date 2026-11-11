@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Sparkles, Key, Power, Activity, CheckCircle2, AlertCircle, Save, RefreshCw, ShieldCheck, Terminal, Cpu, AlertTriangle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { db } from '../../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { fsGetDoc, fsSetDoc } from '../../lib/firebase';
 
 export interface BotInstanceConfig {
   id: string;
@@ -77,8 +76,7 @@ export const AdminBotsTab: React.FC<{ showNotification: (msg: string, type?: 'su
   useEffect(() => {
     const loadFromFirebase = async () => {
       try {
-        const docRef = doc(db, 'settings', 'bots');
-        const snap = await getDoc(docRef);
+        const snap = await fsGetDoc('settings', 'bots');
         if (snap.exists() && snap.data()?.bots) {
           const cloudBots = snap.data().bots;
           if (Array.isArray(cloudBots) && cloudBots.length > 0) {
@@ -147,8 +145,7 @@ export const AdminBotsTab: React.FC<{ showNotification: (msg: string, type?: 'su
       // Sync to Firebase Firestore
       let firestoreSaved = false;
       try {
-        const docRef = doc(db, 'settings', 'bots');
-        await setDoc(docRef, { bots, updatedAt: new Date().toISOString() });
+        await fsSetDoc('settings', 'bots', { bots, updatedAt: new Date().toISOString() });
         firestoreSaved = true;
       } catch (fErr: any) {
         console.warn('[AdminBotsTab] Firestore save warning:', fErr);
