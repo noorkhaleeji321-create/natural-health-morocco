@@ -600,9 +600,12 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     return fetchPromise;
   }, []);
 
-  // Sync on Mount, periodically (10 mins), and throttled on focus (> 5 mins)
+  // Sync on Mount (deferred by 1.8s on fresh boot so mobile initial render is 100% instant), periodically (10 mins), and throttled on focus (> 5 mins)
   useEffect(() => {
-    loadFromServer();
+    // Give mobile browser a clear runway to finish LCP and first paint instantly from bundled initialStoreData
+    const initialSyncTimer = setTimeout(() => {
+      loadFromServer();
+    }, 1800);
 
     const pollTimer = setInterval(() => {
       loadFromServer();
@@ -616,6 +619,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     window.addEventListener('focus', handleFocus);
 
     return () => {
+      clearTimeout(initialSyncTimer);
       clearInterval(pollTimer);
       window.removeEventListener('focus', handleFocus);
     };
