@@ -17,10 +17,12 @@ import { safeGetItem, safeSetItem } from './utils/storage';
 import { Product, CartItem } from './types';
 import { Search, Sparkles, ArrowRight, ShieldAlert, X, Loader2 } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
-import { NaturalWellnessGuideSection } from './components/NaturalWellnessGuideSection';
-import { AboutSection } from './components/AboutSection';
-import { PaymentMethodsSection } from './components/PaymentMethodsSection';
 import { updateProductSeo, updateCategorySeo, updatePageSeo } from './utils/seo';
+
+// Lazy load below-the-fold homepage sections for ultra-low initial bundle size and instant FCP
+const NaturalWellnessGuideSection = lazy(() => import('./components/NaturalWellnessGuideSection').then((m) => ({ default: m.NaturalWellnessGuideSection })));
+const AboutSection = lazy(() => import('./components/AboutSection').then((m) => ({ default: m.AboutSection })));
+const PaymentMethodsSection = lazy(() => import('./components/PaymentMethodsSection').then((m) => ({ default: m.PaymentMethodsSection })));
 
 // Code Splitting & Dynamic Lazy Imports for secondary page routes only
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
