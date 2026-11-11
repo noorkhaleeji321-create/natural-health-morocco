@@ -35,6 +35,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [visibleCount, setVisibleCount] = useState<number>(20);
+
+  // Reset pagination to first 20 products whenever category, search, or sorting changes
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [selectedCategory, searchQuery, sortBy]);
 
   // Popular search tags for quick filtering
   const quickSearchTags = ['زعفران', 'عسل الدغموس', 'أركان', 'رأس الحانوت', 'غاسول', 'لويزة'];
@@ -326,16 +332,50 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredAndSortedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={onAddToCart}
-                onViewDetails={onViewProduct}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
+              {filteredAndSortedProducts.slice(0, visibleCount).map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={onAddToCart}
+                  onViewDetails={onViewProduct}
+                />
+              ))}
+            </div>
+
+            {/* Load More Button (20 by 20 progressive reveal) */}
+            {visibleCount < filteredAndSortedProducts.length && (
+              <div className="mt-10 sm:mt-14 text-center space-y-3">
+                <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#A89C89]">
+                  <span>تم عرض</span>
+                  <span className="font-bold text-[#D97706]">{Math.min(visibleCount, filteredAndSortedProducts.length)}</span>
+                  <span>من أصل</span>
+                  <span className="font-bold text-[#FAF5EC]">{filteredAndSortedProducts.length}</span>
+                  <span>منتج</span>
+                </div>
+
+                {/* Subtle progress indicator */}
+                <div className="w-48 sm:w-64 h-1.5 bg-[#1C2921] rounded-full mx-auto overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#D97706] to-[#F59E0B] transition-all duration-300 rounded-full"
+                    style={{
+                      width: `${Math.min(100, Math.round((visibleCount / filteredAndSortedProducts.length) * 100))}%`,
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 20)}
+                  className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] text-white font-bold text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-orange-900/30 transition-all duration-200 transform hover:scale-[1.02] cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-200" />
+                  <span>إظهار المزيد من المنتجات ({Math.min(20, filteredAndSortedProducts.length - visibleCount)} إضافية)</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </div>
