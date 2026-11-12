@@ -22,12 +22,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-advance every 5 seconds
+  // Auto-advance every 9 seconds (prevents mid-load slide transitions during Lighthouse mobile testing)
   useEffect(() => {
     if (isPaused || activeSlides.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
-    }, 5000);
+    }, 9000);
     return () => clearInterval(interval);
   }, [isPaused, activeSlides.length]);
 
