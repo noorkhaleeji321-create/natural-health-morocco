@@ -489,18 +489,15 @@ const isSameContent = (a: any, b: any): boolean => {
   if (!a || !b) return false;
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) return false;
-    if (a.length === 0) return true;
-    const firstA = a[0];
-    const firstB = b[0];
-    const lastA = a[a.length - 1];
-    const lastB = b[b.length - 1];
-    if (firstA?.id !== firstB?.id || lastA?.id !== lastB?.id) return false;
-    const timeA = firstA?.updatedAt || firstA?.createdAt;
-    const timeB = firstB?.updatedAt || firstB?.createdAt;
-    if (timeA && timeB && timeA !== timeB) return false;
-    return true;
+    if (a.length > 0 && (a[0]?.id !== b[0]?.id || a[a.length - 1]?.id !== b[b.length - 1]?.id)) {
+      return false;
+    }
   }
-  return a?.id === b?.id && (a?.updatedAt || a?.createdAt) === (b?.updatedAt || b?.createdAt);
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
 };
 
         // Await server data first to unblock UI
@@ -626,16 +623,12 @@ const isSameContent = (a: any, b: any): boolean => {
     return fetchPromise;
   }, []);
 
-  // Sync on Mount (deferred to requestIdleCallback / 3.5s so Desktop & Mobile TBT remain near 0ms), periodically (10 mins), and throttled on focus (> 5 mins)
+  // Sync on Mount (deferred by 1.8s on fresh boot so mobile initial render is 100% instant), periodically (10 mins), and throttled on focus (> 5 mins)
   useEffect(() => {
-    let initialSyncTimer: any;
-    if ('requestIdleCallback' in window) {
-      initialSyncTimer = (window as any).requestIdleCallback(() => {
-        setTimeout(loadFromServer, 2000);
-      });
-    } else {
-      initialSyncTimer = setTimeout(loadFromServer, 3500);
-    }
+    // Give mobile browser a clear runway to finish LCP and first paint instantly from bundled initialStoreData
+    const initialSyncTimer = setTimeout(() => {
+      loadFromServer();
+    }, 1800);
 
     const pollTimer = setInterval(() => {
       loadFromServer();
