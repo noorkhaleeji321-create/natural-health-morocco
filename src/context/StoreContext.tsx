@@ -484,12 +484,32 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
             })
           : Promise.resolve(null);
 
+const isSameContent = (a: any, b: any): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    if (a.length > 0 && (a[0]?.id !== b[0]?.id || a[a.length - 1]?.id !== b[b.length - 1]?.id)) {
+      return false;
+    }
+  }
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
+
         // Await server data first to unblock UI
         const data = await dataPromise;
         if (data) {
           unstable_batchedUpdates(() => {
-            if (Array.isArray(data.products) && data.products.length > 0) setProducts(data.products);
-            if (Array.isArray(data.categories) && data.categories.length > 0) setCategories(data.categories);
+            if (Array.isArray(data.products) && data.products.length > 0) {
+              setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
+            }
+            if (Array.isArray(data.categories) && data.categories.length > 0) {
+              setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
+            }
             if (Array.isArray(data.orders)) {
               setOrders((prev) => mergeOrders(prev, data.orders));
             }
@@ -502,35 +522,41 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
                 if (!data.storeSettings.logoUrl && prev.logoUrl) {
                   merged.logoUrl = prev.logoUrl;
                 }
-                return merged;
+                return isSameContent(prev, merged) ? prev : merged;
               });
             }
             if (data?.customers) {
               setCustomers((prev) => {
                 const serverIds = new Set(data.customers.map((c: any) => c.id));
                 const onlyLocal = prev.filter(c => !serverIds.has(c.id));
-                return [...data.customers, ...onlyLocal];
+                const merged = [...data.customers, ...onlyLocal];
+                return isSameContent(prev, merged) ? prev : merged;
               });
             }
             if (data?.sellers && data.sellers.length > 0) {
               setSellers((prev) => {
                  const serverIds = new Set(data.sellers.map((s: any) => s.id));
                  const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-                 return [...data.sellers, ...onlyLocal];
+                 const merged = [...data.sellers, ...onlyLocal];
+                 return isSameContent(prev, merged) ? prev : merged;
               });
             }
             if (data?.stores && data.stores.length > 0) {
               setStores((prev) => {
                 const serverIds = new Set(data.stores.map((s: any) => s.id));
                 const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-                return [...data.stores, ...onlyLocal];
+                const merged = [...data.stores, ...onlyLocal];
+                return isSameContent(prev, merged) ? prev : merged;
               });
             }
             if (data?.bankSettings) {
-              setBankSettings((prev) => ({ ...prev, ...data.bankSettings }));
+              setBankSettings((prev) => {
+                const merged = { ...prev, ...data.bankSettings };
+                return isSameContent(prev, merged) ? prev : merged;
+              });
             }
             if (data?.heroSlides && data.heroSlides.length > 0) {
-              setHeroSlides(data.heroSlides);
+              setHeroSlides((prev) => (isSameContent(prev, data.heroSlides) ? prev : data.heroSlides));
             }
             setIsLoadingProducts(false);
           });
@@ -549,10 +575,10 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           unstable_batchedUpdates(() => {
             setIsFirestoreActive(true);
             if (Array.isArray(firestoreProducts) && firestoreProducts.length > 0) {
-              setProducts(firestoreProducts);
+              setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
             }
             if (Array.isArray(firestoreCategories) && firestoreCategories.length > 0) {
-              setCategories(firestoreCategories);
+              setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
             }
             if (settingsDoc && settingsDoc.data()) {
               const fSettings = settingsDoc.data();
@@ -564,15 +590,19 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
                 if (!fSettings.logoUrl && prev.logoUrl) {
                   merged.logoUrl = prev.logoUrl;
                 }
-                return merged;
+                return isSameContent(prev, merged) ? prev : merged;
               });
             }
             if (bankDoc && bankDoc.data()) {
               const bSettings = bankDoc.data();
-              setBankSettings((prev) => ({ ...defaultBankSettings, ...prev, ...bSettings }));
+              setBankSettings((prev) => {
+                const merged = { ...defaultBankSettings, ...prev, ...bSettings };
+                return isSameContent(prev, merged) ? prev : merged;
+              });
             }
             if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
-              setHeroSlides(heroDoc.data().slides);
+              const fSlides = heroDoc.data().slides;
+              setHeroSlides((prev) => (isSameContent(prev, fSlides) ? prev : fSlides));
             }
           });
         }
