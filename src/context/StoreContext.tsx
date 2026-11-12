@@ -630,6 +630,9 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
 
   useEffect(() => {
     safeSetItem(LOCAL_STORAGE_KEYS.CATEGORIES, categories);
+    if (Array.isArray(categories) && categories.length > 0) {
+      preloadImages(categories.map((c) => c.image));
+    }
   }, [categories]);
 
   useEffect(() => {

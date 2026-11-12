@@ -1,7 +1,7 @@
 import React from 'react';
 import { Category } from '../types';
 import { Sparkles, ArrowLeft } from 'lucide-react';
-import { formatImageUrl, handleImageError } from '../lib/utils';
+import { formatImageUrl, handleImageError, preloadImages } from '../lib/utils';
 import { useStore } from '../context/StoreContext';
 
 interface CategorySectionProps {
@@ -48,12 +48,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     }
   });
 
-  const [canLoadMarqueeDuplicate, setCanLoadMarqueeDuplicate] = React.useState(false);
-
   React.useEffect(() => {
-    const timer = setTimeout(() => setCanLoadMarqueeDuplicate(true), 3500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (categories && categories.length > 0) {
+      preloadImages(categories.map((c) => c.image));
+    }
+  }, [categories]);
 
   return (
     <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[220px] sm:min-h-[280px]">
@@ -65,8 +64,6 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
             {[...categories, ...categories].map((cat, index) => {
               const isSelected = selectedCategory === cat.slug;
               const formattedImg = formatImageUrl(cat.image);
-              const shouldRenderImg = index < categories.length || canLoadMarqueeDuplicate;
-              const isPrimaryCategory = index < categories.length;
 
               return (
                 <div
@@ -87,14 +84,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 >
                   {/* Image Container */}
                   <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#0C120F]">
-                    {formattedImg && shouldRenderImg ? (
+                    {formattedImg ? (
                       <img
                         src={formattedImg}
                         alt={cat.name}
                         width={288}
                         height={176}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                        loading={isPrimaryCategory ? 'eager' : 'lazy'}
+                        loading={index < 6 ? 'eager' : 'lazy'}
                         fetchPriority={index < 4 ? 'high' : 'auto'}
                         decoding="async"
                         onError={handleImageError}
@@ -102,7 +99,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     ) : null}
                     <div
                       className={`cat-fallback w-full h-full flex-col items-center justify-center bg-gradient-to-br from-[#121A16] to-[#0A0E0C] text-[#D97706]/70 ${
-                        formattedImg && shouldRenderImg ? 'hidden' : 'flex'
+                        formattedImg ? 'hidden' : 'flex'
                       }`}
                     >
                       <Sparkles className="w-8 h-8 mb-1" />
