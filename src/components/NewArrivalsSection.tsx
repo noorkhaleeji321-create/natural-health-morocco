@@ -23,7 +23,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
 
   return (
     <section id="new-arrivals" className="py-10 sm:py-20 bg-[#0A0F0D] border-t border-[#1C2822]">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-[-31px] mb-0">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-10 pb-3 sm:pb-4 border-b border-[#212E27]">
           <div>
