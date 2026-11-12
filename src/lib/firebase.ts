@@ -1,33 +1,87 @@
 import firebaseConfig from '../../firebase-applet-config.json';
 
 let appInstance: any = null;
+let appPromise: Promise<any> | null = null;
+
 let dbInstance: any = null;
+let dbPromise: Promise<any> | null = null;
+
 let authInstance: any = null;
+let authPromise: Promise<any> | null = null;
 
 export async function getFirebaseApp() {
   if (appInstance) return appInstance;
-  const { initializeApp, getApps } = await import('firebase/app');
-  const apps = getApps();
-  appInstance = apps.length > 0 ? apps[0] : initializeApp(firebaseConfig);
-  return appInstance;
+  if (!appPromise) {
+    appPromise = (async () => {
+      try {
+        const { initializeApp, getApps } = await import('firebase/app');
+        const apps = getApps();
+        appInstance = apps.length > 0 ? apps[0] : initializeApp(firebaseConfig);
+        return appInstance;
+      } catch (err) {
+        appPromise = null;
+        throw err;
+      }
+    })();
+  }
+  return appPromise;
 }
 
 export async function getFirestoreDb() {
   if (dbInstance) return dbInstance;
-  const app = await getFirebaseApp();
-  const { initializeFirestore } = await import('firebase/firestore');
-  dbInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-  }, firebaseConfig.firestoreDatabaseId);
-  return dbInstance;
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        const app = await getFirebaseApp();
+        const { initializeFirestore, getFirestore } = await import('firebase/firestore');
+        try {
+          dbInstance = initializeFirestore(
+            app,
+            {
+              experimentalForceLongPolling: true,
+            },
+            firebaseConfig.firestoreDatabaseId
+          );
+        } catch (initErr: any) {
+          // If firestore was already initialized for this app, fallback to getFirestore
+          const msg = initErr?.message || '';
+          const code = initErr?.code || '';
+          if (
+            code === 'failed-precondition' ||
+            msg.includes('already been started') ||
+            msg.includes('already been initialized')
+          ) {
+            dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+          } else {
+            throw initErr;
+          }
+        }
+        return dbInstance;
+      } catch (err) {
+        dbPromise = null;
+        throw err;
+      }
+    })();
+  }
+  return dbPromise;
 }
 
 export async function getFirebaseAuth() {
   if (authInstance) return authInstance;
-  const app = await getFirebaseApp();
-  const { getAuth } = await import('firebase/auth');
-  authInstance = getAuth(app);
-  return authInstance;
+  if (!authPromise) {
+    authPromise = (async () => {
+      try {
+        const app = await getFirebaseApp();
+        const { getAuth } = await import('firebase/auth');
+        authInstance = getAuth(app);
+        return authInstance;
+      } catch (err) {
+        authPromise = null;
+        throw err;
+      }
+    })();
+  }
+  return authPromise;
 }
 
 export async function fsGetDocs(colName: string) {
