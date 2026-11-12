@@ -4,19 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Google tag (gtag.js) - Defer to window load to unblock initial mobile render and reduce TBT -->
+    <!-- Google tag (gtag.js) - Defer to requestIdleCallback / idle time to eliminate TBT on Desktop & Mobile -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-XDQ0Z41CWP');
 
-      window.addEventListener('load', function() {
+      function loadGtag() {
+        if (window.__gtagLoaded) return;
+        window.__gtagLoaded = true;
         var script = document.createElement('script');
         script.async = true;
         script.src = 'https://www.googletagmanager.com/gtag/js?id=G-XDQ0Z41CWP';
         document.head.appendChild(script);
-      });
+      }
+
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(function() { setTimeout(loadGtag, 3500); });
+      } else {
+        setTimeout(loadGtag, 4000);
+      }
     </script>
     
     <title>natural-morocco | دليل أسرار العافية الطبيعية ومنتجات الصحة 100% بالمغرب</title>
