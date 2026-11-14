@@ -603,7 +603,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       ...products.map((p) => p.image),
     ];
 
-    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedUrls, 8, 100, 150);
+    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedUrls, 4, 250, 1100);
 
     return () => {
       if (cancelImageWarmupRef.current) {

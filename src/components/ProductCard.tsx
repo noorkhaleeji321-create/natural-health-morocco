@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShoppingCart, Star, Check, Sparkles, Eye, MessageCircle, Package } from 'lucide-react';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
@@ -28,17 +28,6 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const { storeSettings } = useStore();
   const [added, setAdded] = useState(false);
   const formattedImgUrl = formatImageUrl(product.image);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const [imgLoaded, setImgLoaded] = useState(false);
-
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setImgLoaded(true);
-    } else {
-      setImgLoaded(false);
-    }
-  }, [formattedImgUrl]);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,26 +64,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       className="group relative bg-[#121A16] rounded-xl sm:rounded-2xl border border-[#223128] shadow-sm hover:shadow-2xl hover:border-[#D97706]/70 transition-all duration-300 flex flex-col justify-between overflow-hidden hover:-translate-y-1 cursor-pointer h-full"
     >
       {/* Product Image Container */}
-      <div className="relative aspect-square w-full overflow-hidden bg-[#0C120F] shrink-0">
-        {formattedImgUrl && !imgLoaded && (
-          <div className="absolute inset-0 bg-[#15201B] animate-pulse pointer-events-none" />
-        )}
+      <div className="relative aspect-square w-full overflow-hidden bg-[#121A16] shrink-0">
         {formattedImgUrl ? (
           <img
-            ref={imgRef}
             src={formattedImgUrl}
             alt={product.name}
             width={400}
             height={400}
-            className={`w-full h-full object-cover object-center group-hover:scale-108 transition-all duration-300 ease-out ${
-              imgLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
+            className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
             loading={priority ? 'eager' : 'lazy'}
-            fetchPriority="auto"
+            fetchPriority={priority ? 'high' : 'auto'}
             decoding={priority ? 'sync' : 'async'}
-            onLoad={() => setImgLoaded(true)}
             onError={(e) => {
-              setImgLoaded(true);
               handleImageError(e);
             }}
           />

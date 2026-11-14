@@ -11,45 +11,21 @@ interface CategorySectionProps {
   onBrowseCategoryInProducts?: (categoryName: string) => void;
 }
 
-const CategoryCardImage: React.FC<{ src: string; alt: string }> = React.memo(({ src, alt }) => {
-  const imgRef = React.useRef<HTMLImageElement | null>(null);
-  const [loaded, setLoaded] = React.useState(false);
-
-  React.useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setLoaded(true);
-    } else {
-      setLoaded(false);
-    }
-  }, [src]);
-
-  return (
-    <>
-      {!loaded && (
-        <div className="absolute inset-0 bg-[#15201B] animate-pulse pointer-events-none" />
-      )}
-      <img
-        ref={imgRef}
-        src={src}
-        alt={alt}
-        width={288}
-        height={176}
-        className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ease-out ${
-          loaded ? 'opacity-100' : 'opacity-0'
-        }`}
-        loading="eager"
-        fetchPriority="auto"
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        onError={(e) => {
-          setLoaded(true);
-          handleImageError(e);
-        }}
-      />
-    </>
-  );
-});
+const CategoryCardImage: React.FC<{ src: string; alt: string; isClone?: boolean; isHighPriority?: boolean }> = React.memo(
+  ({ src, alt, isClone = false, isHighPriority = false }) => (
+    <img
+      src={src}
+      alt={alt}
+      width={288}
+      height={176}
+      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+      loading={isClone ? 'lazy' : 'eager'}
+      fetchPriority={isHighPriority ? 'high' : 'auto'}
+      decoding={isHighPriority ? 'sync' : 'async'}
+      onError={handleImageError}
+    />
+  )
+);
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
   categories,
@@ -123,9 +99,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   } bg-[#121A16] flex flex-col`}
                 >
                   {/* Image Container */}
-                  <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#0C120F]">
+                  <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#121A16]">
                     {formattedImg ? (
-                      <CategoryCardImage src={formattedImg} alt={cat.name} />
+                      <CategoryCardImage
+                        src={formattedImg}
+                        alt={cat.name}
+                        isClone={index >= categories.length}
+                        isHighPriority={index < 5}
+                      />
                     ) : null}
                     <div
                       className={`cat-fallback w-full h-full flex-col items-center justify-center bg-gradient-to-br from-[#121A16] to-[#0A0E0C] text-[#D97706]/70 ${
