@@ -19,7 +19,7 @@ const getShortDescription = (desc?: string) => {
   return `${words[0]} ${words[1]} ...`;
 };
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
   onAddToCart,
   onViewDetails,
@@ -72,7 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             height={400}
             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
             loading={priority ? 'eager' : 'lazy'}
-            fetchPriority={priority ? 'high' : 'auto'}
+            fetchPriority="auto"
             decoding="async"
             onError={(e) => {
               handleImageError(e);
@@ -239,4 +239,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
     </div>
   );
-};
+});

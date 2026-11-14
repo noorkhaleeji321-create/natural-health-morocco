@@ -53,14 +53,12 @@ export const initialHeroSlides: HeroSlide[] = [
   }
 ];
 
-import initialStoreData from './initialStoreData.json';
-
-export const categories: Category[] = (initialStoreData.categories || []) as Category[];
-export const allProducts: Product[] = (initialStoreData.products || []) as Product[];
+export const categories: Category[] = [];
+export const allProducts: Product[] = [];
 export const defaultSellers: Seller[] = [];
 export const defaultStores: StoreEntity[] = [];
-export const bestSellerProducts: Product[] = (initialStoreData.products || []).filter((p: any) => p.isBestSeller) as Product[];
-export const newProducts: Product[] = (initialStoreData.products || []).filter((p: any) => p.isNew) as Product[];
+export const bestSellerProducts: Product[] = [];
+export const newProducts: Product[] = [];
 
 export const storeInfo = {
   name: 'natural-morocco',

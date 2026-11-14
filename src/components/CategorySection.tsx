@@ -19,6 +19,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 }) => {
   const { products } = useStore();
 
+  React.useEffect(() => {
+    if (!categories || categories.length <= 5) return;
+    const timer = window.setTimeout(() => {
+      preloadImages(categories.slice(5).map((c) => c.image));
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [categories]);
+
   if (!categories || categories.length === 0) {
     return (
       <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[220px] sm:min-h-[280px]">
@@ -47,12 +55,6 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       categoryCounts.set(cName, (categoryCounts.get(cName) || 0) + 1);
     }
   });
-
-  React.useEffect(() => {
-    if (categories && categories.length > 0) {
-      preloadImages(categories.map((c) => c.image));
-    }
-  }, [categories]);
 
   return (
     <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[220px] sm:min-h-[280px]">
@@ -91,8 +93,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                         width={288}
                         height={176}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                        loading={index < 6 ? 'eager' : 'lazy'}
-                        fetchPriority={index < 4 ? 'high' : 'auto'}
+                        loading={index < 5 ? 'eager' : 'lazy'}
+                        fetchPriority="auto"
                         decoding="async"
                         onError={handleImageError}
                       />

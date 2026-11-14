@@ -33,29 +33,8 @@ export async function getFirestoreDb() {
     dbPromise = (async () => {
       try {
         const app = await getFirebaseApp();
-        const { initializeFirestore, getFirestore } = await import('firebase/firestore');
-        try {
-          dbInstance = initializeFirestore(
-            app,
-            {
-              experimentalForceLongPolling: true,
-            },
-            firebaseConfig.firestoreDatabaseId
-          );
-        } catch (initErr: any) {
-          // If firestore was already initialized for this app, fallback to getFirestore
-          const msg = initErr?.message || '';
-          const code = initErr?.code || '';
-          if (
-            code === 'failed-precondition' ||
-            msg.includes('already been started') ||
-            msg.includes('already been initialized')
-          ) {
-            dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-          } else {
-            throw initErr;
-          }
-        }
+        const { getFirestore } = await import('firebase/firestore/lite');
+        dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
         return dbInstance;
       } catch (err) {
         dbPromise = null;
@@ -86,30 +65,30 @@ export async function getFirebaseAuth() {
 
 export async function fsGetDocs(colName: string) {
   const db = await getFirestoreDb();
-  const { collection, getDocs } = await import('firebase/firestore');
+  const { collection, getDocs } = await import('firebase/firestore/lite');
   return getDocs(collection(db, colName));
 }
 
 export async function fsGetDoc(colName: string, docId: string) {
   const db = await getFirestoreDb();
-  const { doc, getDoc } = await import('firebase/firestore');
+  const { doc, getDoc } = await import('firebase/firestore/lite');
   return getDoc(doc(db, colName, docId));
 }
 
-export async function fsSetDoc(colName: string, docId: string, data: any) {
+export async function fsSetDoc(colName: string, docId: string, data: any, merge: boolean = false) {
   const db = await getFirestoreDb();
-  const { doc, setDoc } = await import('firebase/firestore');
-  return setDoc(doc(db, colName, docId), data);
+  const { doc, setDoc } = await import('firebase/firestore/lite');
+  return merge ? setDoc(doc(db, colName, docId), data, { merge: true }) : setDoc(doc(db, colName, docId), data);
 }
 
 export async function fsUpdateDoc(colName: string, docId: string, data: any) {
   const db = await getFirestoreDb();
-  const { doc, updateDoc } = await import('firebase/firestore');
+  const { doc, updateDoc } = await import('firebase/firestore/lite');
   return updateDoc(doc(db, colName, docId), data);
 }
 
 export async function fsDeleteDoc(colName: string, docId: string) {
   const db = await getFirestoreDb();
-  const { doc, deleteDoc } = await import('firebase/firestore');
+  const { doc, deleteDoc } = await import('firebase/firestore/lite');
   return deleteDoc(doc(db, colName, docId));
 }

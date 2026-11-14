@@ -24,14 +24,12 @@ import {
   defaultSellers,
   defaultStores,
 } from '../data/storeData';
-import { safeSetItem, safeGetItem } from '../utils/storage';
+import { safeGetItem, safeRemoveItem } from '../utils/storage';
 import { api } from '../lib/api';
-import { preloadImages } from '../lib/utils';
 import { 
   fsGetDocs, 
   fsGetDoc, 
   fsSetDoc, 
-  fsUpdateDoc, 
   fsDeleteDoc 
 } from '../lib/firebase';
 
@@ -189,7 +187,7 @@ interface StoreContextType {
   adminLogout: () => void;
 
   refreshData: () => Promise<boolean>;
-  loadFromServer: () => Promise<boolean>;
+  loadFromServer: (includeAdminBootstrap?: boolean) => Promise<boolean>;
   addOrderToLocal: (order: Order) => void;
 
   // Defaults Reset
@@ -320,46 +318,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // 1. Products
-  const [products, setProducts] = useState<Product[]>(() => {
-    const cached = safeGetItem<Product[]>(LOCAL_STORAGE_KEYS.PRODUCTS, []);
-    if (Array.isArray(cached) && cached.length >= initialProducts.length) {
-      return cached;
-    }
-    return initialProducts;
-  });
+  // 1. Products (Loaded live from Firebase Firestore - never stale local files)
+  const [products, setProducts] = useState<Product[]>([]);
 
-  // Track initial product loading state for new visitors
-  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
+  // Track initial product loading state for skeleton display while Firestore responds
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => isFirebaseConfigured());
 
-  // 2. Categories
-  const [categories, setCategories] = useState<Category[]>(() => {
-    const cached = safeGetItem<Category[]>(LOCAL_STORAGE_KEYS.CATEGORIES, []);
-    if (Array.isArray(cached) && cached.length === initialCategories.length) {
-      return cached;
-    }
-    return initialCategories;
-  });
+  // 2. Categories (Loaded live from Firebase Firestore)
+  const [categories, setCategories] = useState<Category[]>([]);
 
   // 3. Hero Slides
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
-    const cached = safeGetItem<HeroSlide[]>(LOCAL_STORAGE_KEYS.HERO_SLIDES, null);
-    if (Array.isArray(cached) && cached.length === initialHeroSlides.length) {
-      return cached;
-    }
-    safeSetItem(LOCAL_STORAGE_KEYS.HERO_SLIDES, initialHeroSlides);
-    return initialHeroSlides;
-  });
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides);
 
   // 4. Orders
-  const [orders, setOrders] = useState<Order[]>(() => {
-    return safeGetItem<Order[]>(LOCAL_STORAGE_KEYS.ORDERS, defaultOrders);
-  });
+  const [orders, setOrders] = useState<Order[]>(defaultOrders);
 
   // 5. Customers
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    return safeGetItem<Customer[]>(LOCAL_STORAGE_KEYS.CUSTOMERS, defaultCustomers);
-  });
+  const [customers, setCustomers] = useState<Customer[]>(defaultCustomers);
 
   // 6. Current Logged In Customer
   const [currentUser, setCurrentUser] = useState<Customer | null>(() => {
@@ -367,38 +342,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   // 7. Bank Settings
-  const [bankSettings, setBankSettings] = useState<BankSettings>(() => {
-    const saved = safeGetItem<BankSettings | null>(LOCAL_STORAGE_KEYS.BANK_SETTINGS, null);
-    return saved ? { ...defaultBankSettings, ...saved } : defaultBankSettings;
-  });
+  const [bankSettings, setBankSettings] = useState<BankSettings>(defaultBankSettings);
 
   // 8. Store Settings
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
-    const saved = safeGetItem<StoreSettings | null>(LOCAL_STORAGE_KEYS.STORE_SETTINGS, null);
-    return saved
-      ? { ...defaultStoreSettings, ...saved, showHeroSlider: saved.showHeroSlider !== false }
-      : defaultStoreSettings;
-  });
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(defaultStoreSettings);
 
   // 9. Marketplace Sellers & Stores
-  const [sellers, setSellers] = useState<Seller[]>(() => {
-    return safeGetItem<Seller[]>('said_store_sellers_v2', defaultSellers);
-  });
+  const [sellers, setSellers] = useState<Seller[]>(defaultSellers);
 
-  const [stores, setStores] = useState<StoreEntity[]>(() => {
-    return safeGetItem<StoreEntity[]>('said_store_stores_v2', defaultStores);
-  });
+  const [stores, setStores] = useState<StoreEntity[]>(defaultStores);
 
   const [activeStoreSlug, setActiveStoreSlug] = useState<string | null>(null);
 
-  // Sync to local storage
+  // Purge any legacy stale catalog caches from browser localStorage on first boot
   useEffect(() => {
-    safeSetItem('said_store_sellers_v2', sellers);
-  }, [sellers]);
-
-  useEffect(() => {
-    safeSetItem('said_store_stores_v2', stores);
-  }, [stores]);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.PRODUCTS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.CATEGORIES);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.HERO_SLIDES);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.BANK_SETTINGS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.STORE_SETTINGS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.ORDERS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.CUSTOMERS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.SELLERS);
+    safeRemoveItem(LOCAL_STORAGE_KEYS.STORES);
+  }, []);
 
   // Reactive Current Seller & Store derived from logged in user
   const currentSeller = useMemo(() => {
@@ -457,161 +424,152 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
   const inFlightFetchRef = useRef<Promise<boolean> | null>(null);
   const lastFetchTimestampRef = useRef<number>(0);
 
-  // Reload all data from Server REST API + Firestore (Optimized with request deduplication)
-  const loadFromServer = useCallback(async (): Promise<boolean> => {
+  const isSameContent = (a: any, b: any): boolean => {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      if (a.length > 0 && (a[0]?.id !== b[0]?.id || a[a.length - 1]?.id !== b[b.length - 1]?.id)) {
+        return false;
+      }
+    }
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch {
+      return false;
+    }
+  };
+
+  // Reload all data directly from Firebase Firestore (and admin bootstrap only when authenticated)
+  const loadFromServer = useCallback(async (includeAdminBootstrap: boolean = false): Promise<boolean> => {
     if (inFlightFetchRef.current) {
       return inFlightFetchRef.current;
     }
 
     const fetchPromise = (async () => {
       try {
-        // 1. Fetch from Server API (Bootstrap)
-        const dataPromise = api.getBootstrap();
+        const firebaseEnabled = isFirebaseConfigured();
+        const isAdmin = includeAdminBootstrap || (() => {
+          try {
+            return sessionStorage.getItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH) === 'true';
+          } catch {
+            return false;
+          }
+        })();
 
-        // 2. Query Firestore if configured (products, categories, settings)
-        const firestorePromise = isFirebaseConfigured()
-          ? withTimeout(
-              Promise.all([
-                fsGetDocs('products'),
-                fsGetDocs('categories'),
-                fsGetDocs('settings')
-              ]),
-              8000,
-              'Firebase connection timeout during initial load'
-            ).catch((fErr) => {
-              console.warn('[StoreContext] Firestore sync notice:', fErr);
-              return null;
-            })
-          : Promise.resolve(null);
+        // Query Firestore directly as single source of truth
+        if (firebaseEnabled) {
+          const firestoreQueries: Promise<any>[] = [
+            fsGetDocs('products'),
+            fsGetDocs('categories'),
+            fsGetDocs('settings'),
+          ];
+          if (isAdmin) {
+            firestoreQueries.push(fsGetDocs('orders'));
+          }
 
-const isSameContent = (a: any, b: any): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    if (a.length > 0 && (a[0]?.id !== b[0]?.id || a[a.length - 1]?.id !== b[b.length - 1]?.id)) {
-      return false;
-    }
-  }
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
-  }
-};
-
-        // Await server data first to unblock UI
-        const data = await dataPromise;
-        if (data) {
-          unstable_batchedUpdates(() => {
-            if (Array.isArray(data.products) && data.products.length > 0) {
-              setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
-            }
-            if (Array.isArray(data.categories) && data.categories.length > 0) {
-              setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
-            }
-            if (Array.isArray(data.orders)) {
-              setOrders((prev) => mergeOrders(prev, data.orders));
-            }
-            if (data.storeSettings) {
-              setStoreSettings((prev) => {
-                const merged = { ...prev, ...data.storeSettings };
-                if (!data.storeSettings.aboutImageUrl && prev.aboutImageUrl) {
-                  merged.aboutImageUrl = prev.aboutImageUrl;
-                }
-                if (!data.storeSettings.logoUrl && prev.logoUrl) {
-                  merged.logoUrl = prev.logoUrl;
-                }
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (data?.customers) {
-              setCustomers((prev) => {
-                const serverIds = new Set(data.customers.map((c: any) => c.id));
-                const onlyLocal = prev.filter(c => !serverIds.has(c.id));
-                const merged = [...data.customers, ...onlyLocal];
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (data?.sellers && data.sellers.length > 0) {
-              setSellers((prev) => {
-                 const serverIds = new Set(data.sellers.map((s: any) => s.id));
-                 const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-                 const merged = [...data.sellers, ...onlyLocal];
-                 return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (data?.stores && data.stores.length > 0) {
-              setStores((prev) => {
-                const serverIds = new Set(data.stores.map((s: any) => s.id));
-                const onlyLocal = prev.filter(s => !serverIds.has(s.id));
-                const merged = [...data.stores, ...onlyLocal];
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (data?.bankSettings) {
-              setBankSettings((prev) => {
-                const merged = { ...prev, ...data.bankSettings };
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (data?.heroSlides && data.heroSlides.length > 0) {
-              setHeroSlides((prev) => (isSameContent(prev, data.heroSlides) ? prev : data.heroSlides));
-            }
-            setIsLoadingProducts(false);
+          const firestoreSnaps = await withTimeout(
+            Promise.all(firestoreQueries),
+            8000,
+            'Firebase connection timeout during load'
+          ).catch((fErr) => {
+            console.warn('[StoreContext] Firestore sync notice:', fErr);
+            return null;
           });
+
+          if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
+            const [prodSnap, catSnap, settingsSnap, ordersSnap] = firestoreSnaps;
+            const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+            const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
+            const settingsDoc = settingsSnap.docs.find((d: any) => d.id === 'main');
+            const bankDoc = settingsSnap.docs.find((d: any) => d.id === 'bank');
+            const heroDoc = settingsSnap.docs.find((d: any) => d.id === 'hero');
+            const firestoreOrders = ordersSnap ? ordersSnap.docs.map((d: any) => ({ ...d.data(), id: d.id })) : null;
+
+            unstable_batchedUpdates(() => {
+              setIsFirestoreActive(true);
+              if (Array.isArray(firestoreProducts)) {
+                setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
+              }
+              if (Array.isArray(firestoreCategories)) {
+                setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
+              }
+              if (settingsDoc && settingsDoc.data()) {
+                const fSettings = settingsDoc.data();
+                setStoreSettings((prev) => {
+                  const merged = { ...prev, ...fSettings };
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (bankDoc && bankDoc.data()) {
+                const bSettings = bankDoc.data();
+                setBankSettings((prev) => {
+                  const merged = { ...defaultBankSettings, ...prev, ...bSettings };
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
+                const fSlides = heroDoc.data().slides;
+                setHeroSlides((prev) => (isSameContent(prev, fSlides) ? prev : fSlides));
+              }
+              if (firestoreOrders && Array.isArray(firestoreOrders)) {
+                setOrders((prev) => mergeOrders(prev, firestoreOrders));
+              }
+              setIsLoadingProducts(false);
+            });
+          }
         }
 
-        // Check Firestore results once completed
-        const firestoreSnaps = await firestorePromise;
-        if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
-          const [prodSnap, catSnap, settingsSnap] = firestoreSnaps;
-          const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-          const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-          const settingsDoc = settingsSnap.docs.find((d: any) => d.id === 'main');
-          const bankDoc = settingsSnap.docs.find((d: any) => d.id === 'bank');
-          const heroDoc = settingsSnap.docs.find((d: any) => d.id === 'hero');
-
-          unstable_batchedUpdates(() => {
-            setIsFirestoreActive(true);
-            if (Array.isArray(firestoreProducts) && firestoreProducts.length > 0) {
-              setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
-            }
-            if (Array.isArray(firestoreCategories) && firestoreCategories.length > 0) {
-              setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
-            }
-            if (settingsDoc && settingsDoc.data()) {
-              const fSettings = settingsDoc.data();
-              setStoreSettings((prev) => {
-                const merged = { ...prev, ...fSettings };
-                if (!fSettings.aboutImageUrl && prev.aboutImageUrl) {
-                  merged.aboutImageUrl = prev.aboutImageUrl;
+        // Only fetch backend API bootstrap if Admin is logged in OR if Firestore is unavailable
+        if (isAdmin || !firebaseEnabled) {
+          const data = await api.getBootstrap();
+          if (data) {
+            unstable_batchedUpdates(() => {
+              if (!firebaseEnabled) {
+                if (Array.isArray(data.products) && data.products.length > 0) {
+                  setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
                 }
-                if (!fSettings.logoUrl && prev.logoUrl) {
-                  merged.logoUrl = prev.logoUrl;
+                if (Array.isArray(data.categories) && data.categories.length > 0) {
+                  setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
                 }
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (bankDoc && bankDoc.data()) {
-              const bSettings = bankDoc.data();
-              setBankSettings((prev) => {
-                const merged = { ...defaultBankSettings, ...prev, ...bSettings };
-                return isSameContent(prev, merged) ? prev : merged;
-              });
-            }
-            if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
-              const fSlides = heroDoc.data().slides;
-              setHeroSlides((prev) => (isSameContent(prev, fSlides) ? prev : fSlides));
-            }
-          });
+              }
+              if (Array.isArray(data.orders)) {
+                setOrders((prev) => mergeOrders(prev, data.orders));
+              }
+              if (data?.customers) {
+                setCustomers((prev) => {
+                  const serverIds = new Set(data.customers.map((c: any) => c.id));
+                  const onlyLocal = prev.filter((c) => !serverIds.has(c.id));
+                  const merged = [...data.customers, ...onlyLocal];
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (data?.sellers && data.sellers.length > 0) {
+                setSellers((prev) => {
+                  const serverIds = new Set(data.sellers!.map((s: any) => s.id));
+                  const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
+                  const merged = [...data.sellers!, ...onlyLocal];
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (data?.stores && data.stores.length > 0) {
+                setStores((prev) => {
+                  const serverIds = new Set(data.stores!.map((s: any) => s.id));
+                  const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
+                  const merged = [...data.stores!, ...onlyLocal];
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              setIsLoadingProducts(false);
+            });
+          }
         }
 
         setIsLoadingProducts(false);
         lastFetchTimestampRef.current = Date.now();
         return true;
       } catch (err) {
-        console.warn('Local database is running offline (Server sync skipped):', err);
+        console.warn('Database sync notice:', err);
         setIsLoadingProducts(false);
         return false;
       } finally {
@@ -623,28 +581,29 @@ const isSameContent = (a: any, b: any): boolean => {
     return fetchPromise;
   }, []);
 
-  // Sync on Mount (deferred by 1.8s on fresh boot so mobile initial render is 100% instant), periodically (10 mins), and throttled on focus (> 5 mins)
+  // Sync immediately after initial render frame, periodically (5 mins), and on tab focus (> 15s)
   useEffect(() => {
-    // Give mobile browser a clear runway to finish LCP and first paint instantly from bundled initialStoreData
-    const initialSyncTimer = setTimeout(() => {
+    const rafId = requestAnimationFrame(() => {
       loadFromServer();
-    }, 1800);
+    });
 
     const pollTimer = setInterval(() => {
       loadFromServer();
-    }, 600000);
+    }, 300000);
 
-    const handleFocus = () => {
-      if (Date.now() - lastFetchTimestampRef.current > 300000) {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchTimestampRef.current > 15000) {
         loadFromServer();
       }
     };
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
-      clearTimeout(initialSyncTimer);
+      cancelAnimationFrame(rafId);
       clearInterval(pollTimer);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, [loadFromServer]);
 
@@ -652,50 +611,6 @@ const isSameContent = (a: any, b: any): boolean => {
   const syncWithFirebase = async (): Promise<{ success: boolean; count: number; message: string }> => {
     return { success: false, count: 0, message: 'ميزة Firebase غير مفعلة حالياً.' };
   };
-
-  // Sync to LocalStorage safely on changes
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.PRODUCTS, products);
-  }, [products]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.CATEGORIES, categories);
-    if (Array.isArray(categories) && categories.length > 0) {
-      preloadImages(categories.map((c) => c.image));
-    }
-  }, [categories]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.HERO_SLIDES, heroSlides);
-  }, [heroSlides]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.ORDERS, orders);
-  }, [orders]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.CUSTOMERS, customers);
-  }, [customers]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.CURRENT_USER, currentUser);
-  }, [currentUser]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.BANK_SETTINGS, bankSettings);
-  }, [bankSettings]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.STORE_SETTINGS, storeSettings);
-  }, [storeSettings]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.SELLERS, sellers);
-  }, [sellers]);
-
-  useEffect(() => {
-    safeSetItem(LOCAL_STORAGE_KEYS.STORES, stores);
-  }, [stores]);
 
   // Product Actions
   const addProduct = async (productData: Omit<Product, 'id'>): Promise<{ success: boolean; product?: Product; error?: string }> => {
@@ -737,29 +652,21 @@ const isSameContent = (a: any, b: any): boolean => {
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>): Promise<{ success: boolean; product?: Product; error?: string }> => {
-    let updatedProduct: Product | undefined;
-    
-    // Calculate update first to avoid state timing issues
-    setProducts((prev) => {
-      const updatedList = prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
-      updatedProduct = updatedList.find((p) => p.id === id);
-      return updatedList;
-    });
-
-    // Fallback if setProducts above didn't find it instantly (though it should)
-    const currentProd = products.find(p => p.id === id);
-    const productToSave = updatedProduct || (currentProd ? { ...currentProd, ...updates } : null);
-
-    if (!productToSave) {
+    const nowIso = new Date().toISOString();
+    const currentProd = products.find((p) => p.id === id);
+    if (!currentProd) {
       return { success: false, error: 'المنتج غير موجود في القائمة' };
     }
 
-    // 2. Persist in Firestore
+    const productToSave: Product = { ...currentProd, ...updates, updatedAt: nowIso };
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: nowIso } : p)));
+
+    // 2. Persist in Firestore using merge so partial updates succeed cleanly with firestore/lite
     if (isFirebaseConfigured()) {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `products/${id}`,
-        () => fsUpdateDoc('products', id, cleanForFirestore(updates))
+        () => fsSetDoc('products', id, cleanForFirestore({ ...updates, updatedAt: nowIso }), true)
       );
     }
 
@@ -768,12 +675,12 @@ const isSameContent = (a: any, b: any): boolean => {
       console.warn('[StoreContext] updateProduct backend notice:', apiRes.error);
       return {
         success: true,
-        product: productToSave as Product,
+        product: productToSave,
         error: apiRes.error ? `تم التحديث (تنبيه الخادم: ${apiRes.error})` : undefined,
       };
     }
 
-    return { success: true, product: apiRes.data || (productToSave as Product) };
+    return { success: true, product: apiRes.data || productToSave };
   };
 
   const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -840,40 +747,33 @@ const isSameContent = (a: any, b: any): boolean => {
   };
 
   const updateCategory = async (id: string, updates: Partial<Category>): Promise<{ success: boolean; category?: Category; error?: string }> => {
-    let updatedCat: Category | undefined;
-    
-    setCategories((prev) => {
-      const updatedList = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
-      updatedCat = updatedList.find((c) => c.id === id);
-      return updatedList;
-    });
-
-    const currentCat = categories.find(c => c.id === id);
-    const categoryToSave = updatedCat || (currentCat ? { ...currentCat, ...updates } : null);
-
-    if (!categoryToSave) {
+    const currentCat = categories.find((c) => c.id === id);
+    if (!currentCat) {
       return { success: false, error: 'التصنيف غير موجود' };
     }
 
-    // 2. Persist to Firestore
+    const categoryToSave: Category = { ...currentCat, ...updates };
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+
+    // 2. Persist to Firestore using merge
     if (isFirebaseConfigured()) {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `categories/${id}`,
-        () => fsUpdateDoc('categories', id, cleanForFirestore(updates))
+        () => fsSetDoc('categories', id, cleanForFirestore(updates), true)
       );
     }
 
-    const apiRes = await api.updateCategory(id, categoryToSave as Category);
+    const apiRes = await api.updateCategory(id, categoryToSave);
     if (!apiRes.success) {
       return {
         success: true,
-        category: categoryToSave as Category,
+        category: categoryToSave,
         error: apiRes.error ? `تم التحديث (تنبيه الخادم: ${apiRes.error})` : undefined,
       };
     }
 
-    return { success: true, category: apiRes.data || (categoryToSave as Category) };
+    return { success: true, category: apiRes.data || categoryToSave };
   };
 
   const deleteCategory = async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -900,7 +800,6 @@ const isSameContent = (a: any, b: any): boolean => {
   // Hero Slides
   const updateHeroSlides = async (slides: HeroSlide[]): Promise<boolean> => {
     setHeroSlides(slides);
-    safeSetItem(LOCAL_STORAGE_KEYS.HERO_SLIDES, slides);
     if (isFirebaseConfigured()) {
       await syncFirestoreWrite(
         OperationType.WRITE,
@@ -933,11 +832,7 @@ const isSameContent = (a: any, b: any): boolean => {
     }
 
     // 1. Update local state immediately
-    setOrders((prev) => {
-      const merged = mergeOrders(prev, [newOrder]);
-      safeSetItem(LOCAL_STORAGE_KEYS.ORDERS, merged);
-      return merged;
-    });
+    setOrders((prev) => mergeOrders(prev, [newOrder]));
 
     // 2. Persist to Firestore
     if (isFirebaseConfigured()) {
@@ -959,21 +854,15 @@ const isSameContent = (a: any, b: any): boolean => {
   };
 
   const addOrderToLocal = (order: Order) => {
-    setOrders((prev) => {
-      const merged = mergeOrders(prev, [order]);
-      safeSetItem(LOCAL_STORAGE_KEYS.ORDERS, merged);
-      return merged;
-    });
-
-
+    setOrders((prev) => mergeOrders(prev, [order]));
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus, note?: string) => {
     const nowIso = new Date().toISOString();
 
     // 1. Update local state immediately for UI responsiveness
-    setOrders((prev) => {
-      const updated = prev.map((o) =>
+    setOrders((prev) =>
+      prev.map((o) =>
         o.id === orderId
           ? {
               ...o,
@@ -982,10 +871,8 @@ const isSameContent = (a: any, b: any): boolean => {
               updatedAt: nowIso,
             }
           : o
-      );
-      safeSetItem(LOCAL_STORAGE_KEYS.ORDERS, updated);
-      return updated;
-    });
+      )
+    );
 
     // 2. Sync to Firestore (Persists order status updates across sessions & devices)
     if (isFirebaseConfigured()) {
@@ -999,7 +886,7 @@ const isSameContent = (a: any, b: any): boolean => {
       await syncFirestoreWrite(
         OperationType.UPDATE,
         `orders/${orderId}`,
-        () => fsUpdateDoc('orders', orderId, cleanForFirestore(updates))
+        () => fsSetDoc('orders', orderId, cleanForFirestore(updates), true)
       );
     }
 
@@ -1013,11 +900,7 @@ const isSameContent = (a: any, b: any): boolean => {
 
   const deleteOrder = async (orderId: string) => {
     // 1. Update local state
-    setOrders((prev) => {
-      const filtered = prev.filter((o) => o.id !== orderId);
-      safeSetItem(LOCAL_STORAGE_KEYS.ORDERS, filtered);
-      return filtered;
-    });
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
 
     // 2. Persist in Firestore
     if (isFirebaseConfigured()) {
@@ -1127,11 +1010,9 @@ const isSameContent = (a: any, b: any): boolean => {
   };
 
   // Bank Settings (طرق الدفع والـ RIB)
-  // Bank Settings (طرق الدفع والـ RIB)
   const updateBankSettings = async (updates: Partial<BankSettings>): Promise<{ success: boolean; firestoreSaved?: boolean; error?: string }> => {
-    let nextSettings: BankSettings = { ...bankSettings, ...updates };
+    const nextSettings: BankSettings = { ...bankSettings, ...updates };
     setBankSettings(nextSettings);
-    safeSetItem(LOCAL_STORAGE_KEYS.BANK_SETTINGS, nextSettings);
 
     let firestoreSaved = false;
     let firestoreError = '';
@@ -1159,9 +1040,8 @@ const isSameContent = (a: any, b: any): boolean => {
 
   // Store Settings & Admin PIN (إعدادات المتجر + كود المدير)
   const updateStoreSettings = async (updates: Partial<StoreSettings>): Promise<{ success: boolean; firestoreSaved?: boolean; error?: string }> => {
-    let nextSettings: StoreSettings = { ...storeSettings, ...updates };
+    const nextSettings: StoreSettings = { ...storeSettings, ...updates };
     setStoreSettings(nextSettings);
-    safeSetItem(LOCAL_STORAGE_KEYS.STORE_SETTINGS, nextSettings);
 
     let firestoreSaved = false;
     let firestoreError = '';
@@ -1201,6 +1081,7 @@ const isSameContent = (a: any, b: any): boolean => {
       if (isServerValid) {
         setIsAdminAuthenticated(true);
         try { sessionStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH, 'true'); } catch {}
+        void loadFromServer(true);
         return true;
       }
     } catch (err) {
@@ -1226,6 +1107,7 @@ const isSameContent = (a: any, b: any): boolean => {
             try { await api.verifyAdminPin(trimmed); } catch {}
             setIsAdminAuthenticated(true);
             try { sessionStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH, 'true'); } catch {}
+            void loadFromServer(true);
             return true;
           }
         }
@@ -1239,6 +1121,7 @@ const isSameContent = (a: any, b: any): boolean => {
       try { await api.verifyAdminPin(trimmed); } catch {}
       setIsAdminAuthenticated(true);
       try { sessionStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH, 'true'); } catch {}
+      void loadFromServer(true);
       return true;
     }
 
@@ -1492,62 +1375,86 @@ const isSameContent = (a: any, b: any): boolean => {
     setStores(defaultStores);
   };
 
+  const refreshData = useCallback(() => loadFromServer(isAdminAuthenticated), [loadFromServer, isAdminAuthenticated]);
+
+  const contextValue = useMemo<StoreContextType>(
+    () => ({
+      products,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+      categories,
+      addCategory,
+      updateCategory,
+      deleteCategory,
+      heroSlides,
+      updateHeroSlides,
+      orders,
+      createOrder,
+      updateOrderStatus,
+      deleteOrder,
+      findOrderByTracking,
+      customers,
+      currentUser,
+      registerCustomer,
+      loginCustomer,
+      logoutCustomer,
+      updateCustomerProfile,
+      bankSettings,
+      updateBankSettings,
+      storeSettings,
+      updateStoreSettings,
+      // Multi-vendor marketplace
+      sellers,
+      stores,
+      currentSeller,
+      currentStore,
+      activeStoreSlug,
+      setActiveStoreSlug,
+      applyToBecomeSeller,
+      updateSellerStatus,
+      updateStoreDetails,
+      addSellerProduct,
+      updateSellerProduct,
+      deleteSellerProduct,
+      approveProduct,
+      getSellerOrders,
+      refreshMarketplace,
+      loginAsSeller,
+      isAdminAuthenticated,
+      adminLogin,
+      adminLogout,
+      refreshData,
+      loadFromServer,
+      addOrderToLocal,
+      resetToDefaults,
+      isFirestoreActive,
+      isLoadingProducts,
+    }),
+    [
+      products,
+      categories,
+      heroSlides,
+      orders,
+      customers,
+      currentUser,
+      bankSettings,
+      storeSettings,
+      sellers,
+      stores,
+      currentSeller,
+      currentStore,
+      activeStoreSlug,
+      isAdminAuthenticated,
+      refreshData,
+      loadFromServer,
+      isFirestoreActive,
+      isLoadingProducts,
+    ]
+  );
+
   return (
-    <StoreContext.Provider
-      value={{
-        products,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        categories,
-        addCategory,
-        updateCategory,
-        deleteCategory,
-        heroSlides,
-        updateHeroSlides,
-        orders,
-        createOrder,
-        updateOrderStatus,
-        deleteOrder,
-        findOrderByTracking,
-        customers,
-        currentUser,
-        registerCustomer,
-        loginCustomer,
-        logoutCustomer,
-        updateCustomerProfile,
-        bankSettings,
-        updateBankSettings,
-        storeSettings,
-        updateStoreSettings,
-        // Multi-vendor marketplace
-        sellers,
-        stores,
-        currentSeller,
-        currentStore,
-        activeStoreSlug,
-        setActiveStoreSlug,
-        applyToBecomeSeller,
-        updateSellerStatus,
-        updateStoreDetails,
-        addSellerProduct,
-        updateSellerProduct,
-        deleteSellerProduct,
-        approveProduct,
-        getSellerOrders,
-        refreshMarketplace,
-        loginAsSeller,
-        isAdminAuthenticated,
-        adminLogin,
-        adminLogout,
-        refreshData: loadFromServer,
-        loadFromServer,
-        addOrderToLocal,
-        resetToDefaults,
-        isFirestoreActive,
-        isLoadingProducts,
-      }}
-    >
+    <StoreContext.Provider value={contextValue}>
       {children}
     </StoreContext.Provider>
   );
