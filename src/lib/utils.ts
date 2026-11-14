@@ -86,17 +86,70 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event
 const preloadedSet = new Set<string>();
 
 /**
- * Preloads image URLs into browser memory/disk cache in background
+ * Preloads image URLs into browser memory/disk cache and decodes off the main thread
  */
 export function preloadImages(urls: (string | undefined)[]): void {
-  if (!Array.isArray(urls)) return;
-  
+  if (!Array.isArray(urls) || typeof Image === 'undefined') return;
+
   urls.forEach((u) => {
     const formatted = formatImageUrl(u);
     if (formatted && !preloadedSet.has(formatted)) {
       preloadedSet.add(formatted);
       const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        if (typeof img.decode === 'function') {
+          img.decode().catch(() => {});
+        }
+      };
+      img.onerror = () => {
+        preloadedSet.delete(formatted);
+      };
       img.src = formatted;
     }
   });
+}
+
+/**
+ * Warms image cache in small parallel batches after critical LCP settles,
+ * preventing lazy pop-in on scroll without saturating initial network bandwidth.
+ */
+export function preloadImagesBatched(
+  urls: (string | undefined)[],
+  batchSize: number = 8,
+  intervalMs: number = 100,
+  initialDelayMs: number = 200
+): () => void {
+  if (!Array.isArray(urls) || typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const queue = Array.from(
+    new Set(urls.map((u) => formatImageUrl(u)).filter((u) => Boolean(u) && !preloadedSet.has(u)))
+  );
+
+  if (queue.length === 0) return () => {};
+
+  let cancelled = false;
+  let timerId: number | undefined;
+  let offset = 0;
+
+  const processNextBatch = () => {
+    if (cancelled || offset >= queue.length) return;
+    const batch = queue.slice(offset, offset + batchSize);
+    offset += batchSize;
+    preloadImages(batch);
+    if (offset < queue.length) {
+      timerId = window.setTimeout(processNextBatch, intervalMs);
+    }
+  };
+
+  timerId = window.setTimeout(processNextBatch, initialDelayMs);
+
+  return () => {
+    cancelled = true;
+    if (timerId !== undefined) {
+      window.clearTimeout(timerId);
+    }
+  };
 }

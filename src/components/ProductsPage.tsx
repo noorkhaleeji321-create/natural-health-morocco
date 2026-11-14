@@ -15,6 +15,7 @@ import { ProductCard } from './ProductCard';
 import { ProductCardSkeleton } from './ProductCardSkeleton';
 import { useStore } from '../context/StoreContext';
 import { updateCategorySeo, updatePageSeo } from '../utils/seo';
+import { preloadImages } from '../lib/utils';
 
 interface ProductsPageProps {
   products: Product[];
@@ -108,6 +109,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       updatePageSeo('products');
     }
   }, [selectedCategory, categories, filteredAndSortedProducts.length]);
+
+  useEffect(() => {
+    const visibleUrls = filteredAndSortedProducts.slice(0, visibleCount).map((p) => p.image);
+    if (visibleUrls.length > 0) {
+      preloadImages(visibleUrls);
+    }
+  }, [filteredAndSortedProducts, visibleCount]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -334,12 +342,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredAndSortedProducts.slice(0, visibleCount).map((product) => (
+              {filteredAndSortedProducts.slice(0, visibleCount).map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   onAddToCart={onAddToCart}
                   onViewDetails={onViewProduct}
+                  priority={index < 12}
                 />
               ))}
             </div>

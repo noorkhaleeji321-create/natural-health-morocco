@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ShoppingCart, Star, Check, Sparkles, Eye, MessageCircle, Package } from 'lucide-react';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
@@ -27,6 +27,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 }) => {
   const { storeSettings } = useStore();
   const [added, setAdded] = useState(false);
+  const formattedImgUrl = formatImageUrl(product.image);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setImgLoaded(true);
+    } else {
+      setImgLoaded(false);
+    }
+  }, [formattedImgUrl]);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,24 +76,32 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     >
       {/* Product Image Container */}
       <div className="relative aspect-square w-full overflow-hidden bg-[#0C120F] shrink-0">
-        {formatImageUrl(product.image) ? (
+        {formattedImgUrl && !imgLoaded && (
+          <div className="absolute inset-0 bg-[#15201B] animate-pulse pointer-events-none" />
+        )}
+        {formattedImgUrl ? (
           <img
-            src={formatImageUrl(product.image)}
+            ref={imgRef}
+            src={formattedImgUrl}
             alt={product.name}
             width={400}
             height={400}
-            className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
+            className={`w-full h-full object-cover object-center group-hover:scale-108 transition-all duration-300 ease-out ${
+              imgLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority="auto"
-            decoding="async"
+            decoding={priority ? 'sync' : 'async'}
+            onLoad={() => setImgLoaded(true)}
             onError={(e) => {
+              setImgLoaded(true);
               handleImageError(e);
             }}
           />
         ) : null}
         <div
           className={`prod-fallback w-full h-full flex-col items-center justify-center bg-[#0C120F] text-[#8A9B90] ${
-            formatImageUrl(product.image) ? 'hidden' : 'flex'
+            formattedImgUrl ? 'hidden' : 'flex'
           }`}
         >
           <Package className="w-10 h-10 text-[#D97706]/60 mb-1" />

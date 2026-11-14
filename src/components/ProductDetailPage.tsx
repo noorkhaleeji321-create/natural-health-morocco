@@ -21,7 +21,7 @@ import {
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
 import { useStore } from '../context/StoreContext';
-import { formatImageUrl, handleImageError } from '../lib/utils';
+import { formatImageUrl, handleImageError, preloadImages } from '../lib/utils';
 import { updateProductSeo } from '../utils/seo';
 
 interface ProductDetailPageProps {
@@ -51,12 +51,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const galleryImages = rawImages.length > 0 ? rawImages : [DEFAULT_FALLBACK_IMG];
 
-  // Reset states and update SEO metadata whenever product changes
+  // Reset states, preload gallery, and update SEO metadata whenever product changes
   useEffect(() => {
     setActiveImageIndex(0);
     setQuantity(1);
     setAdded(false);
     updateProductSeo(product);
+    if (galleryImages.length > 0) {
+      preloadImages(galleryImages);
+    }
   }, [product]);
 
   const handleNextImage = () => {
@@ -138,6 +141,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   id="main-product-image"
                   src={formatImageUrl(currentActiveImage)}
                   alt={product.name}
+                  loading="eager"
+                  decoding="sync"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   onError={handleImageError}
                 />

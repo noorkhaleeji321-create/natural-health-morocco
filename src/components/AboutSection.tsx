@@ -39,7 +39,7 @@ export const AboutSection: React.FC = () => {
                   alt={`${displayTitle} للعطارة المغربية`}
                   width={500}
                   height={625}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   className="w-full h-full object-cover"
                   onError={handleImageError}

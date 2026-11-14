@@ -25,6 +25,7 @@ import {
   defaultStores,
 } from '../data/storeData';
 import { safeGetItem, safeRemoveItem } from '../utils/storage';
+import { preloadImages, preloadImagesBatched } from '../lib/utils';
 import { api } from '../lib/api';
 import { 
   fsGetDocs, 
@@ -423,6 +424,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
 
   const inFlightFetchRef = useRef<Promise<boolean> | null>(null);
   const lastFetchTimestampRef = useRef<number>(0);
+  const cancelImageWarmupRef = useRef<(() => void) | null>(null);
 
   const isSameContent = (a: any, b: any): boolean => {
     if (a === b) return true;
@@ -580,6 +582,36 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     inFlightFetchRef.current = fetchPromise;
     return fetchPromise;
   }, []);
+
+  // Warm browser image cache as soon as categories & products arrive from Firestore
+  useEffect(() => {
+    if (categories.length > 0) {
+      preloadImages(categories.map((c) => c.image));
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (cancelImageWarmupRef.current) {
+      cancelImageWarmupRef.current();
+      cancelImageWarmupRef.current = null;
+    }
+    if (products.length === 0) return;
+
+    const prioritizedUrls = [
+      ...products.filter((p) => p.isBestSeller).slice(0, 20).map((p) => p.image),
+      ...products.filter((p) => p.isNew).slice(0, 20).map((p) => p.image),
+      ...products.map((p) => p.image),
+    ];
+
+    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedUrls, 8, 100, 150);
+
+    return () => {
+      if (cancelImageWarmupRef.current) {
+        cancelImageWarmupRef.current();
+        cancelImageWarmupRef.current = null;
+      }
+    };
+  }, [products]);
 
   // Sync immediately after initial render frame, periodically (5 mins), and on tab focus (> 15s)
   useEffect(() => {

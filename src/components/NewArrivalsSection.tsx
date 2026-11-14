@@ -67,12 +67,13 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
-              {products.slice(0, visibleCount).map((product) => (
+              {products.slice(0, visibleCount).map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   onAddToCart={onAddToCart}
                   onViewDetails={onViewDetails}
+                  priority={index < 8}
                 />
               ))}
             </div>

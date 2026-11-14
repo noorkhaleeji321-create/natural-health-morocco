@@ -11,6 +11,46 @@ interface CategorySectionProps {
   onBrowseCategoryInProducts?: (categoryName: string) => void;
 }
 
+const CategoryCardImage: React.FC<{ src: string; alt: string }> = React.memo(({ src, alt }) => {
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
+  const [loaded, setLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    } else {
+      setLoaded(false);
+    }
+  }, [src]);
+
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 bg-[#15201B] animate-pulse pointer-events-none" />
+      )}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        width={288}
+        height={176}
+        className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ease-out ${
+          loaded ? 'opacity-100' : 'opacity-0'
+        }`}
+        loading="eager"
+        fetchPriority="auto"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={(e) => {
+          setLoaded(true);
+          handleImageError(e);
+        }}
+      />
+    </>
+  );
+});
+
 export const CategorySection: React.FC<CategorySectionProps> = ({
   categories,
   selectedCategory,
@@ -20,11 +60,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   const { products } = useStore();
 
   React.useEffect(() => {
-    if (!categories || categories.length <= 5) return;
-    const timer = window.setTimeout(() => {
-      preloadImages(categories.slice(5).map((c) => c.image));
-    }, 1500);
-    return () => window.clearTimeout(timer);
+    if (categories && categories.length > 0) {
+      preloadImages(categories.map((c) => c.image));
+    }
   }, [categories]);
 
   if (!categories || categories.length === 0) {
@@ -87,17 +125,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   {/* Image Container */}
                   <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#0C120F]">
                     {formattedImg ? (
-                      <img
-                        src={formattedImg}
-                        alt={cat.name}
-                        width={288}
-                        height={176}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                        loading={index < 5 ? 'eager' : 'lazy'}
-                        fetchPriority="auto"
-                        decoding="async"
-                        onError={handleImageError}
-                      />
+                      <CategoryCardImage src={formattedImg} alt={cat.name} />
                     ) : null}
                     <div
                       className={`cat-fallback w-full h-full flex-col items-center justify-center bg-gradient-to-br from-[#121A16] to-[#0A0E0C] text-[#D97706]/70 ${

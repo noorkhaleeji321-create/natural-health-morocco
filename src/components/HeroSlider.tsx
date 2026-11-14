@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { HeroSlide } from '../types';
 import { initialHeroSlides } from '../data/storeData';
-import { formatImageUrl, handleImageError } from '../lib/utils';
+import { formatImageUrl, handleImageError, preloadImages } from '../lib/utils';
 
 interface HeroSliderProps {
   slides?: HeroSlide[];
@@ -16,11 +16,22 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
 
   const activeSlides = (slides && slides.length > 0) ? slides : initialHeroSlides;
 
-  // Defer background slides loading for 3 seconds so initial LCP has 100% network priority
+  // Defer background slides loading slightly so initial Slide 0 LCP has 100% network priority, then preload next slides promptly
   useEffect(() => {
-    const timer = setTimeout(() => setCanLoadOtherSlides(true), 3000);
+    const timer = setTimeout(() => {
+      setCanLoadOtherSlides(true);
+      if (activeSlides.length > 1) {
+        const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 640;
+        const nextSources = activeSlides.slice(1).map((s) => {
+          const r = getSlideSources(s.image);
+          if (r) return isMobileViewport ? r.mobile : r.desktop;
+          return s.image;
+        });
+        preloadImages(nextSources);
+      }
+    }, 900);
     return () => clearTimeout(timer);
-  }, []);
+  }, [activeSlides]);
 
   // Auto-advance every 9 seconds (prevents mid-load slide transitions during Lighthouse mobile testing)
   useEffect(() => {
