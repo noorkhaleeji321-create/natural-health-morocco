@@ -459,8 +459,10 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           }
         })();
 
-        // Query Firestore directly as single source of truth
-        if (firebaseEnabled) {
+        let firestoreLoaded = false;
+
+        // Query Firestore directly as primary source of truth when online
+        if (firebaseEnabled && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
           const firestoreQueries: Promise<any>[] = [
             fsGetDocs('products'),
             fsGetDocs('categories'),
@@ -475,11 +477,17 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
             8000,
             'Firebase connection timeout during load'
           ).catch((fErr) => {
-            console.warn('[StoreContext] Firestore sync notice:', fErr);
+            const msg = String(fErr?.message || fErr || '');
+            if (msg.toLowerCase().includes('permission')) {
+              handleFirestoreError(fErr, OperationType.LIST, 'products,categories,settings');
+            } else {
+              console.warn('[StoreContext] Direct Firestore unavailable, falling back to API bootstrap:', msg);
+            }
             return null;
           });
 
           if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
+            firestoreLoaded = true;
             const [prodSnap, catSnap, settingsSnap, ordersSnap] = firestoreSnaps;
             const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
             const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
@@ -522,17 +530,32 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           }
         }
 
-        // Only fetch backend API bootstrap if Admin is logged in OR if Firestore is unavailable
-        if (isAdmin || !firebaseEnabled) {
+        // Fetch backend API bootstrap if Admin is logged in OR if direct Firestore is unavailable/failed
+        if (isAdmin || !firebaseEnabled || !firestoreLoaded) {
           const data = await api.getBootstrap();
           if (data) {
             unstable_batchedUpdates(() => {
-              if (!firebaseEnabled) {
+              if (!firebaseEnabled || !firestoreLoaded) {
                 if (Array.isArray(data.products) && data.products.length > 0) {
                   setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
                 }
                 if (Array.isArray(data.categories) && data.categories.length > 0) {
                   setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
+                }
+                if (data.storeSettings) {
+                  setStoreSettings((prev) => {
+                    const merged = { ...prev, ...data.storeSettings };
+                    return isSameContent(prev, merged) ? prev : merged;
+                  });
+                }
+                if (data.bankSettings) {
+                  setBankSettings((prev) => {
+                    const merged = { ...defaultBankSettings, ...prev, ...data.bankSettings };
+                    return isSameContent(prev, merged) ? prev : merged;
+                  });
+                }
+                if (Array.isArray(data.heroSlides) && data.heroSlides.length > 0) {
+                  setHeroSlides((prev) => (isSameContent(prev, data.heroSlides) ? prev : data.heroSlides));
                 }
               }
               if (Array.isArray(data.orders)) {
@@ -613,7 +636,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     };
   }, [products]);
 
-  // Sync immediately after initial render frame, periodically (5 mins), and on tab focus (> 15s)
+  // Sync immediately after initial render frame, periodically (5 mins), on tab focus (> 15s), and when back online
   useEffect(() => {
     const rafId = requestAnimationFrame(() => {
       loadFromServer();
@@ -628,13 +651,18 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         loadFromServer();
       }
     };
+    const handleOnline = () => {
+      loadFromServer();
+    };
     window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
       cancelAnimationFrame(rafId);
       clearInterval(pollTimer);
       window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, [loadFromServer]);

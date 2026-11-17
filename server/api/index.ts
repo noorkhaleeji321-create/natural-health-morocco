@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { dbService, validateAdminSession, createAdminSession } from '../services/dbService';
-import { getLiveFirestoreAdminPin } from '../services/firebaseAdmin';
+import { getLiveFirestoreAdminPin, getLiveFirestoreStorefrontFallback } from '../services/firebaseAdmin';
 import { generateDynamicSitemapXml } from '../services/sitemapService';
 import { notifyNewOrder, getBotStatus, getBotLogs, formatWhatsAppOrderUrl, runAutomaticBackup } from '../services/botWorker';
 import { Order, Product, Category, Seller, StoreEntity, Customer, SellerStatus, ProductStatus } from '../../src/types';
@@ -174,16 +174,37 @@ router.post('/admin/verify-pin', async (req, res) => {
 });
 
 // Bootstrap: Privacy-Safe initial store data
-router.get('/bootstrap', (req, res) => {
+router.get('/bootstrap', async (req, res) => {
   try {
     const token = getAdminToken(req);
     const isAdmin = validateAdminSession(token);
 
-    const products = dbService.getProducts();
-    const categories = dbService.getCategories();
-    const storeSettings = dbService.getStoreSettings();
-    const bankSettings = dbService.getBankSettings();
-    const heroSlides = dbService.getHeroSlides();
+    let products = dbService.getProducts();
+    let categories = dbService.getCategories();
+    let storeSettings = dbService.getStoreSettings();
+    let bankSettings = dbService.getBankSettings();
+    let heroSlides = dbService.getHeroSlides();
+
+    if ((!products || products.length === 0) || (!categories || categories.length === 0)) {
+      const firestoreFallback = await getLiveFirestoreStorefrontFallback();
+      if (firestoreFallback) {
+        if ((!products || products.length === 0) && firestoreFallback.products.length > 0) {
+          products = firestoreFallback.products;
+        }
+        if ((!categories || categories.length === 0) && firestoreFallback.categories.length > 0) {
+          categories = firestoreFallback.categories;
+        }
+        if (firestoreFallback.storeSettings) {
+          storeSettings = { ...(storeSettings || {}), ...firestoreFallback.storeSettings };
+        }
+        if (firestoreFallback.bankSettings) {
+          bankSettings = { ...(bankSettings || {}), ...firestoreFallback.bankSettings };
+        }
+        if (firestoreFallback.heroSlides && firestoreFallback.heroSlides.length > 0) {
+          heroSlides = firestoreFallback.heroSlides;
+        }
+      }
+    }
 
     // Sanitize Store Settings: Strip adminPin and internal keys for public visitors
     const publicStoreSettings = storeSettings ? {
