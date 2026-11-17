@@ -9,20 +9,26 @@ import { HeroSlider } from './components/HeroSlider';
 import { TrustHighlights } from './components/TrustHighlights';
 import { CategorySection } from './components/CategorySection';
 import { BestSellersSection } from './components/BestSellersSection';
-import { NewArrivalsSection } from './components/NewArrivalsSection';
-import { Footer } from './components/Footer';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { safeGetItem, safeSetItem } from './utils/storage';
 import { Product, CartItem } from './types';
 import { Search, Sparkles, ArrowRight, ShieldAlert, X, Loader2 } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
-import { NaturalWellnessGuideSection } from './components/NaturalWellnessGuideSection';
-import { AboutSection } from './components/AboutSection';
-import { PaymentMethodsSection } from './components/PaymentMethodsSection';
 import { updateProductSeo, updateCategorySeo, updatePageSeo } from './utils/seo';
 
-// Code Splitting & Dynamic Lazy Imports for secondary page routes only
+// Code Splitting & Dynamic Lazy Imports for below-the-fold sections & secondary routes
+const NewArrivalsSection = lazy(() =>
+  import('./components/NewArrivalsSection').then((m) => ({ default: m.NewArrivalsSection }))
+);
+const NaturalWellnessGuideSection = lazy(() =>
+  import('./components/NaturalWellnessGuideSection').then((m) => ({ default: m.NaturalWellnessGuideSection }))
+);
+const AboutSection = lazy(() => import('./components/AboutSection').then((m) => ({ default: m.AboutSection })));
+const PaymentMethodsSection = lazy(() =>
+  import('./components/PaymentMethodsSection').then((m) => ({ default: m.PaymentMethodsSection }))
+);
+const Footer = lazy(() => import('./components/Footer').then((m) => ({ default: m.Footer })));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const ProductsPage = lazy(() => import('./components/ProductsPage').then((m) => ({ default: m.ProductsPage })));
 const ProductDetailPage = lazy(() => import('./components/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage })));
@@ -37,6 +43,46 @@ const PageLoadingFallback: React.FC = () => (
     <p className="text-sm font-bold text-[#D0C5B4]">جاري التحميل...</p>
   </div>
 );
+
+// Viewport / Idle gate so below-the-fold lazy chunks do not download or hydrate during TBT/LCP window
+const LazyBelowFold: React.FC<{ children: React.ReactNode; fallback: React.ReactNode; delayMs?: number }> = ({
+  children,
+  fallback,
+  delayMs = 4200,
+}) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const hostRef = React.useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (shouldRender) return;
+    let observer: IntersectionObserver | null = null;
+    const timer = window.setTimeout(() => setShouldRender(true), delayMs);
+
+    if (typeof IntersectionObserver !== 'undefined' && hostRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            setShouldRender(true);
+            observer?.disconnect();
+          }
+        },
+        { rootMargin: '200px 0px' }
+      );
+      observer.observe(hostRef.current);
+    }
+
+    return () => {
+      window.clearTimeout(timer);
+      observer?.disconnect();
+    };
+  }, [shouldRender, delayMs]);
+
+  return (
+    <div ref={hostRef} className="cv-below-fold">
+      {shouldRender ? <Suspense fallback={fallback}>{children}</Suspense> : fallback}
+    </div>
+  );
+};
 
 type PageType =
   | 'home'
@@ -155,11 +201,13 @@ function MainAppContent() {
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       } else {
-        // Home page default
-        if (currentPage !== 'product-detail' || !selectedProduct) {
-          setCurrentPage('home');
-          setActiveSection('home');
-          updatePageSeo('home');
+        // Home page default — avoid redundant head DOM mutations if already on home
+        if (currentPage !== 'home') {
+          if (currentPage !== 'product-detail' || !selectedProduct) {
+            setCurrentPage('home');
+            setActiveSection('home');
+            updatePageSeo('home');
+          }
         }
       }
     };
@@ -534,41 +582,58 @@ function MainAppContent() {
               onViewAllProducts={() => handleNavigate('products')}
             />
 
-            <NewArrivalsSection
-              products={filteredNewArrivals}
-              isLoading={isLoadingProducts}
-              onAddToCart={handleAddToCart}
-              onViewDetails={handleViewProduct}
-              onViewAllProducts={() => handleNavigate('products')}
-            />
+            <LazyBelowFold
+              fallback={<div className="min-h-[420px] bg-[#0A0F0D] border-t border-[#1C2822]" aria-hidden="true" />}
+              delayMs={4000}
+            >
+              <NewArrivalsSection
+                products={filteredNewArrivals}
+                isLoading={isLoadingProducts}
+                onAddToCart={handleAddToCart}
+                onViewDetails={handleViewProduct}
+                onViewAllProducts={() => handleNavigate('products')}
+              />
+            </LazyBelowFold>
 
-            <NaturalWellnessGuideSection
-              onBrowseCategory={(catName) => handleNavigate('products', catName)}
-              onExploreProducts={() => handleNavigate('products')}
-            />
-
-            <AboutSection />
-
-            <PaymentMethodsSection />
+            <LazyBelowFold
+              fallback={<div className="min-h-[600px] bg-[#080C0A]" aria-hidden="true" />}
+              delayMs={4200}
+            >
+              <NaturalWellnessGuideSection
+                onBrowseCategory={(catName) => handleNavigate('products', catName)}
+                onExploreProducts={() => handleNavigate('products')}
+              />
+              <AboutSection />
+              <PaymentMethodsSection />
+            </LazyBelowFold>
           </>
         )}
       </main>
 
-      {/* Cart Drawer */}
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveFromCart}
-        onClearCart={handleClearCart}
-        onOpenFullCartPage={() => {
-          setIsCartOpen(false);
-          handleNavigate('cart');
-        }}
-      />
+      {/* Cart Drawer - Only fetched and mounted when user opens the drawer */}
+      {isCartOpen && (
+        <Suspense fallback={null}>
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            items={cartItems}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            onOpenFullCartPage={() => {
+              setIsCartOpen(false);
+              handleNavigate('cart');
+            }}
+          />
+        </Suspense>
+      )}
 
-      <Footer onNavigate={handleNavigate} />
+      <LazyBelowFold
+        fallback={<footer className="min-h-[320px] bg-[#070B09]" aria-hidden="true" />}
+        delayMs={4400}
+      >
+        <Footer onNavigate={handleNavigate} />
+      </LazyBelowFold>
     </div>
   );
 }

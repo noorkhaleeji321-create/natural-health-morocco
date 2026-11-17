@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Category } from '../types';
 import { Sparkles, ArrowLeft } from 'lucide-react';
-import { formatImageUrl, handleImageError, preloadImages } from '../lib/utils';
+import { formatThumbUrl, handleImageError } from '../lib/utils';
 import { useStore } from '../context/StoreContext';
 
 interface CategorySectionProps {
@@ -11,17 +11,17 @@ interface CategorySectionProps {
   onBrowseCategoryInProducts?: (categoryName: string) => void;
 }
 
-const CategoryCardImage: React.FC<{ src: string; alt: string; isClone?: boolean; isHighPriority?: boolean }> = React.memo(
-  ({ src, alt, isClone = false, isHighPriority = false }) => (
+const CategoryCardImage: React.FC<{ src: string; alt: string; isEager?: boolean; isHighPriority?: boolean }> = React.memo(
+  ({ src, alt, isEager = false, isHighPriority = false }) => (
     <img
       src={src}
       alt={alt}
       width={288}
       height={176}
       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-      loading={isClone ? 'lazy' : 'eager'}
-      fetchPriority={isHighPriority ? 'high' : 'auto'}
-      decoding={isHighPriority ? 'sync' : 'async'}
+      loading={isEager ? 'eager' : 'lazy'}
+      fetchPriority={isHighPriority ? 'high' : 'low'}
+      decoding="async"
       onError={handleImageError}
     />
   )
@@ -35,24 +35,33 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 }) => {
   const { products } = useStore();
 
-  React.useEffect(() => {
-    if (categories && categories.length > 0) {
-      preloadImages(categories.map((c) => c.image));
-    }
-  }, [categories]);
+  // Pre-calculate real product count per category dynamically
+  const categoryCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    (products || []).forEach((p) => {
+      if (p.category) {
+        const cName = p.category.trim();
+        map.set(cName, (map.get(cName) || 0) + 1);
+      }
+    });
+    return map;
+  }, [products]);
 
   if (!categories || categories.length === 0) {
     return (
-      <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[220px] sm:min-h-[280px]">
+      <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[304px] sm:min-h-[354px]">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex gap-3 sm:gap-5 py-2 overflow-hidden" dir="ltr">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={`cat-skel-${i}`}
-                className="w-52 sm:w-64 md:w-72 shrink-0 rounded-xl sm:rounded-2xl border border-[#223128] bg-[#121A16] h-48 sm:h-64 animate-pulse flex flex-col justify-between p-3"
+                className="w-52 sm:w-64 md:w-72 shrink-0 rounded-xl sm:rounded-2xl border border-[#223128] bg-[#121A16] h-[238px] sm:h-[288px] animate-pulse flex flex-col justify-between p-3"
               >
                 <div className="w-full h-32 sm:h-44 bg-[#1A2620] rounded-lg" />
-                <div className="h-4 bg-[#1A2620] rounded w-2/3 mt-2" />
+                <div className="space-y-2 mt-2">
+                  <div className="h-3.5 bg-[#1A2620] rounded w-3/4" />
+                  <div className="h-3 bg-[#1A2620] rounded w-1/2" />
+                </div>
               </div>
             ))}
           </div>
@@ -61,17 +70,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     );
   }
 
-  // Pre-calculate real product count per category dynamically
-  const categoryCounts = new Map<string, number>();
-  (products || []).forEach((p) => {
-    if (p.category) {
-      const cName = p.category.trim();
-      categoryCounts.set(cName, (categoryCounts.get(cName) || 0) + 1);
-    }
-  });
-
   return (
-    <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[220px] sm:min-h-[280px]">
+    <section id="categories" className="py-6 px-0 bg-[#0A0E0C] border-y border-[#1C2822] min-h-[304px] sm:min-h-[354px]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Categories Single Moving Row */}
         <div className="relative w-full overflow-hidden py-2 mx-0 mb-0" dir="ltr">
@@ -79,7 +79,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           <div className="animate-scroll-ltr flex gap-3 sm:gap-5 py-2 w-max">
             {[...categories, ...categories].map((cat, index) => {
               const isSelected = selectedCategory === cat.slug;
-              const formattedImg = formatImageUrl(cat.image);
+              const formattedImg = formatThumbUrl(cat.image, 360, 70);
 
               return (
                 <div
@@ -104,8 +104,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                       <CategoryCardImage
                         src={formattedImg}
                         alt={cat.name}
-                        isClone={index >= categories.length}
-                        isHighPriority={index < 5}
+                        isEager={index < 8}
+                        isHighPriority={index < 3}
                       />
                     ) : null}
                     <div

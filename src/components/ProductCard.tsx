@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Star, Check, Sparkles, Eye, MessageCircle, Package } from 'lucide-react';
 import { Product } from '../types';
-import { useStore } from '../context/StoreContext';
-import { formatImageUrl, handleImageError } from '../lib/utils';
+import { storeInfo } from '../data/storeData';
+import { formatThumbUrl, handleImageError } from '../lib/utils';
 
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
   onViewDetails?: (product: Product) => void;
   priority?: boolean;
+  whatsappNumber?: string;
 }
 
 // Helper function to extract first two words of description followed by dots
@@ -24,10 +25,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onAddToCart,
   onViewDetails,
   priority = false,
+  whatsappNumber,
 }) => {
-  const { storeSettings } = useStore();
   const [added, setAdded] = useState(false);
-  const formattedImgUrl = formatImageUrl(product.image);
+  const formattedImgUrl = formatThumbUrl(product.image, 420, 72);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,7 +41,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
   const handleWhatsAppOrder = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const rawPhone = storeSettings.whatsapp || storeSettings.phone || '+212661234567';
+    const rawPhone = whatsappNumber || storeInfo.whatsapp || storeInfo.phone || '+212661234567';
     const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
     const message = `السلام عليكم ورحمة الله، أود طلب هذا المنتج من عِطارة عند سعيد:
 🌿 المنتج: ${product.name}
@@ -73,11 +74,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             height={400}
             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
             loading={priority ? 'eager' : 'lazy'}
-            fetchPriority={priority ? 'high' : 'auto'}
-            decoding={priority ? 'sync' : 'async'}
-            onError={(e) => {
-              handleImageError(e);
-            }}
+            fetchPriority={priority ? 'high' : 'low'}
+            decoding="async"
+            onError={handleImageError}
           />
         ) : null}
         <div
@@ -91,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Hover overlay hint */}
         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-          <span className="hidden sm:inline-flex items-center gap-1.5 bg-[#0D1511]/90 text-[#F3BA63] text-xs font-bold px-3 py-1.5 rounded-full border border-[#D97706]/40 shadow-lg backdrop-blur-xs">
+          <span className="hidden sm:inline-flex items-center gap-1.5 bg-[#0D1511]/95 text-[#F3BA63] text-xs font-bold px-3 py-1.5 rounded-full border border-[#D97706]/40 shadow-lg">
             <Eye className="w-3.5 h-3.5" />
             عرض تفاصيل المنتج
           </span>
@@ -114,7 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Category Pill */}
         <div className="absolute bottom-1.5 right-1.5 sm:bottom-2.5 sm:right-2.5 z-10">
-          <span className="bg-black/85 backdrop-blur-xs text-[#FAF5EC] text-[8.5px] sm:text-[10.5px] px-1.5 sm:px-2 py-0.5 rounded-md font-medium border border-white/10">
+          <span className="bg-black/90 text-[#FAF5EC] text-[8.5px] sm:text-[10.5px] px-1.5 sm:px-2 py-0.5 rounded-md font-medium border border-white/10">
             {product.category}
           </span>
         </div>

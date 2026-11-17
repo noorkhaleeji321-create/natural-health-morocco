@@ -4,19 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Google tag (gtag.js) - Defer to window load to unblock initial mobile render and reduce TBT -->
+    <!-- Google tag (gtag.js) - Defer past TBT window / load on idle or first interaction -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-XDQ0Z41CWP');
 
-      window.addEventListener('load', function() {
-        var script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-XDQ0Z41CWP';
-        document.head.appendChild(script);
-      });
+      (function() {
+        var loaded = false;
+        function loadGtag() {
+          if (loaded) return;
+          loaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-XDQ0Z41CWP';
+          document.head.appendChild(s);
+        }
+        window.addEventListener('pointerdown', loadGtag, { once: true, passive: true });
+        window.addEventListener('keydown', loadGtag, { once: true, passive: true });
+        window.addEventListener('load', function() {
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(function() { setTimeout(loadGtag, 4500); }, { timeout: 6500 });
+          } else {
+            setTimeout(loadGtag, 4800);
+          }
+        }, { once: true });
+      })();
     </script>
     
     <title>natural-morocco | دليل أسرار العافية الطبيعية ومنتجات الصحة 100% بالمغرب</title>
@@ -31,13 +45,11 @@
     <link rel="preload" as="image" href="/assets/images/hero_spices_mobile.webp" type="image/webp" media="(max-width: 640px)" fetchpriority="high" />
     <link rel="preload" as="image" href="/assets/images/hero_spices_1793739545710.webp" type="image/webp" media="(min-width: 641px)" fetchpriority="high" />
 
-    <!-- Preconnect to Firestore, jsDelivr Edge CDN and GitHub Raw for ultra-fast data & image fetching -->
-    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
-    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Preconnect to edge WebP thumbnail CDN & DNS-prefetch secondary origins -->
+    <link rel="preconnect" href="https://wsrv.nl" />
+    <link rel="dns-prefetch" href="https://wsrv.nl" />
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-    <link rel="preconnect" href="https://raw.githubusercontent.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
     <link rel="dns-prefetch" href="https://raw.githubusercontent.com" />
 
     <!-- Canonical Link & OpenGraph URL -->
@@ -189,10 +201,32 @@
         }
       ]
     }
+    <!-- Parallel Early Bootstrap Pre-fetch so catalog JSON arrives before React finishes parsing -->
+    <script>
+      (function() {
+        var p = location.pathname;
+        var h = location.hash;
+        if ((p === '/' || p.indexOf('/product/') === 0 || p.indexOf('/category/') === 0) && h.indexOf('admin') === -1) {
+          window.__bootstrapPromise = fetch('/api/bootstrap')
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .catch(function() { return null; });
+        }
+      })();
     </script>
   </head>
   <body class="bg-[#0C100E] text-[#F3EFE6] font-['Tajawal',sans-serif] antialiased selection:bg-[#D97706] selection:text-white" style="background-color: #0C100E; color: #F3EFE6; margin: 0; min-height: 100vh;">
-    <div id="root"></div>
+    <div id="root"><div id="initial-hero-shell" style="background:#080C0A;min-height:100vh;"><header style="background:#0F1512;border-bottom:1px solid #212E27;"><div style="background:#070A09;height:36px;border-bottom:1px solid #1A2620;"></div><div style="max-width:80rem;margin:0 auto;padding:0 12px;height:64px;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:8px;background:#1E332B;border:1px solid rgba(217,119,6,.4);"></div><span style="font-weight:800;font-size:18px;color:#FAF5EC;">natural-morocco</span></div><div style="width:76px;height:34px;border-radius:9999px;background:#D97706;"></div></div><div style="padding:0 12px 10px;"><div style="height:34px;border-radius:9999px;background:#16201B;border:1px solid #2B3C32;"></div></div></header><section aria-label="عرض ترحيبي" style="position:relative;width:100%;height:220px;background:#0A0E0C;overflow:hidden;border-bottom:1px solid #1C2822;"><style>@media(min-width:640px){#initial-hero-shell section{height:380px!important}}@media(min-width:768px){#initial-hero-shell section{height:480px!important}}@media(min-width:1024px){#initial-hero-shell section{height:540px!important}#initial-hero-shell header>div:nth-child(3){display:none!important}#initial-hero-shell header>div:nth-child(2){height:80px!important}}</style><picture style="display:block;width:100%;height:100%;"><source media="(max-width:640px)" srcset="/assets/images/hero_spices_mobile.webp" type="image/webp" /><source srcset="/assets/images/hero_spices_1793739545710.webp" type="image/webp" /><img src="/assets/images/hero_spices_mobile.webp" alt="دليل أسرار العافية الطبيعية بالمغرب - natural-morocco" width="1080" height="608" fetchpriority="high" decoding="async" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" /></picture></section></div></div>
+    <script>
+      (function() {
+        var p = location.pathname;
+        var s = location.search;
+        var h = location.hash.toLowerCase();
+        if (p !== '/' || h.indexOf('admin') !== -1 || s.indexOf('product=') !== -1 || s.indexOf('category=') !== -1) {
+          var shell = document.getElementById('initial-hero-shell');
+          if (shell) shell.remove();
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { unstable_batchedUpdates } from 'react-dom';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, startTransition } from 'react';
 import {
   Product,
   Category,
@@ -25,7 +24,7 @@ import {
   defaultStores,
 } from '../data/storeData';
 import { safeGetItem, safeRemoveItem } from '../utils/storage';
-import { preloadImages, preloadImagesBatched } from '../lib/utils';
+import { formatThumbUrl, preloadImagesBatched } from '../lib/utils';
 import { api } from '../lib/api';
 import { 
   fsGetDocs, 
@@ -424,10 +423,12 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
 
   const inFlightFetchRef = useRef<Promise<boolean> | null>(null);
   const lastFetchTimestampRef = useRef<number>(0);
+  const cancelCategoryWarmupRef = useRef<(() => void) | null>(null);
   const cancelImageWarmupRef = useRef<(() => void) | null>(null);
   const hasLoadedCatalogRef = useRef<boolean>(false);
   const retryAttemptRef = useRef<number>(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deferredSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSameContent = (a: any, b: any): boolean => {
     if (a === b) return true;
@@ -467,18 +468,23 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         let firestoreLoadedAny = false;
         let bootstrapApplied = false;
 
-        // Helper to apply bootstrap payload (only when direct Firestore hasn't already hydrated newer live data)
+        // Helper to apply bootstrap payload without triggering a synchronous long main-thread commit
         const applyBootstrapData = (data: any) => {
           if (!data) return;
-          unstable_batchedUpdates(() => {
+          if (!firestoreLoadedProducts) {
+            if (Array.isArray(data.categories) && data.categories.length > 0) {
+              setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
+            }
+            if (Array.isArray(data.products) && data.products.length > 0) {
+              hasLoadedCatalogRef.current = true;
+              bootstrapApplied = true;
+            }
+          }
+
+          startTransition(() => {
             if (!firestoreLoadedProducts) {
               if (Array.isArray(data.products) && data.products.length > 0) {
-                hasLoadedCatalogRef.current = true;
-                bootstrapApplied = true;
                 setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
-              }
-              if (Array.isArray(data.categories) && data.categories.length > 0) {
-                setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
               }
               if (data.storeSettings) {
                 setStoreSettings((prev) => {
@@ -529,18 +535,10 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           });
         };
 
-        // On first visit (cold browser cache) or admin session, start same-origin /api/bootstrap immediately in parallel
-        // so visitors see products right away without waiting for vendor-firebase chunk + 3rd-party TLS handshake.
-        const bootstrapPromise: Promise<any> | null =
-          isInitialColdLoad || isAdmin || !firebaseEnabled
-            ? api.getBootstrap().then((data) => {
-                if (data) applyBootstrapData(data);
-                return data;
-              }).catch(() => null)
-            : null;
-
-        // Query live Firestore directly in parallel (Promise.allSettled so one slow collection never drops others)
-        if (firebaseEnabled && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+        const runDirectFirestoreSync = async () => {
+          if (!firebaseEnabled || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+            return;
+          }
           const firestoreQueries: Promise<any>[] = [
             fsGetDocs('products'),
             fsGetDocs('categories'),
@@ -593,7 +591,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
             }
 
             if (firestoreLoadedAny) {
-              unstable_batchedUpdates(() => {
+              startTransition(() => {
                 setIsFirestoreActive(true);
                 if (Array.isArray(firestoreProducts)) {
                   setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
@@ -628,14 +626,41 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
               });
             }
           }
-        }
+        };
 
-        // Wait for bootstrap if it was started, or fetch it as fallback if Firestore failed to load products
-        if (bootstrapPromise) {
-          await bootstrapPromise;
-        } else if (!firestoreLoadedProducts && !hasLoadedCatalogRef.current) {
-          const fallbackData = await api.getBootstrap().catch(() => null);
-          if (fallbackData) applyBootstrapData(fallbackData);
+        // Fast-path for cold storefront visits: fetch same-origin edge-cached /api/bootstrap FIRST
+        // and avoid downloading/parsing the 214KB vendor-firebase chunk during initial LCP/TBT window.
+        if (isInitialColdLoad && !isAdmin) {
+          const bootstrapData = await api.getBootstrap().catch(() => null);
+          if (bootstrapData && Array.isArray(bootstrapData.products) && bootstrapData.products.length > 0) {
+            applyBootstrapData(bootstrapData);
+            if (firebaseEnabled) {
+              if (deferredSyncTimerRef.current) clearTimeout(deferredSyncTimerRef.current);
+              deferredSyncTimerRef.current = setTimeout(() => {
+                void runDirectFirestoreSync();
+              }, 4800);
+            }
+          } else {
+            await runDirectFirestoreSync();
+          }
+        } else {
+          // Admin sessions & subsequent live refreshes query Firestore directly in parallel with bootstrap if needed
+          const bootstrapPromise: Promise<any> | null =
+            isAdmin || !firebaseEnabled
+              ? api.getBootstrap().then((data) => {
+                  if (data) applyBootstrapData(data);
+                  return data;
+                }).catch(() => null)
+              : null;
+
+          await runDirectFirestoreSync();
+
+          if (bootstrapPromise) {
+            await bootstrapPromise;
+          } else if (!firestoreLoadedProducts && !hasLoadedCatalogRef.current) {
+            const fallbackData = await api.getBootstrap().catch(() => null);
+            if (fallbackData) applyBootstrapData(fallbackData);
+          }
         }
 
         if (hasLoadedCatalogRef.current) {
@@ -667,13 +692,30 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     return fetchPromise;
   }, []);
 
-  // Warm browser image cache as soon as categories & products arrive from Firestore
+  // Warm offscreen category WebP thumbnails gently AFTER Hero LCP & first 4 cards finish loading
   useEffect(() => {
-    if (categories.length > 0) {
-      preloadImages(categories.map((c) => c.image));
+    if (cancelCategoryWarmupRef.current) {
+      cancelCategoryWarmupRef.current();
+      cancelCategoryWarmupRef.current = null;
     }
+    if (categories.length <= 4) return;
+
+    const remainingCatThumbs = categories
+      .slice(4)
+      .map((c) => formatThumbUrl(c.image, 360, 70))
+      .filter(Boolean);
+
+    cancelCategoryWarmupRef.current = preloadImagesBatched(remainingCatThumbs, 4, 300, 2600);
+
+    return () => {
+      if (cancelCategoryWarmupRef.current) {
+        cancelCategoryWarmupRef.current();
+        cancelCategoryWarmupRef.current = null;
+      }
+    };
   }, [categories]);
 
+  // Warm visible product WebP thumbnails quietly in background after initial page paint/TBT window
   useEffect(() => {
     if (cancelImageWarmupRef.current) {
       cancelImageWarmupRef.current();
@@ -681,13 +723,12 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
     if (products.length === 0) return;
 
-    const prioritizedUrls = [
-      ...products.filter((p) => p.isBestSeller).slice(0, 20).map((p) => p.image),
-      ...products.filter((p) => p.isNew).slice(0, 20).map((p) => p.image),
-      ...products.map((p) => p.image),
+    const prioritizedThumbUrls = [
+      ...products.filter((p) => p.isBestSeller).slice(0, 12).map((p) => formatThumbUrl(p.image, 420, 72)),
+      ...products.filter((p) => p.isNew).slice(0, 8).map((p) => formatThumbUrl(p.image, 420, 72)),
     ];
 
-    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedUrls, 4, 250, 1100);
+    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedThumbUrls, 4, 350, 4200);
 
     return () => {
       if (cancelImageWarmupRef.current) {
@@ -721,6 +762,10 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current);
         retryTimerRef.current = null;
+      }
+      if (deferredSyncTimerRef.current) {
+        clearTimeout(deferredSyncTimerRef.current);
+        deferredSyncTimerRef.current = null;
       }
       clearInterval(pollTimer);
       window.removeEventListener('focus', handleVisibilityOrFocus);

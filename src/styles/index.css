@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
-/* Hide vertical & horizontal scrollbars across all browsers while keeping smooth scrolling */
+/* Hide vertical & horizontal scrollbars cleanly without universal * style-recalc penalty */
 html,
 body,
 #root,
-* {
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE and Edge */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-*::-webkit-scrollbar {
-  display: none !important; /* Chrome, Safari, Opera */
-  width: 0px !important;
-  height: 0px !important;
-  background: transparent !important;
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 /* Smooth scrolling and prevent layout shifts */
@@ -62,5 +64,10 @@ body {
   width: max-content;
   animation: marquee-ltr 70s linear infinite !important;
   will-change: transform;
+}
+
+.cv-below-fold {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 600px;
 }
 

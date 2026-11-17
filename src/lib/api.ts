@@ -56,9 +56,18 @@ export const getAuthHeaders = (): Record<string, string> => {
 };
 
 export const api = {
-  // Bootstrap: get all initial store data in a single request
+  // Bootstrap: get all initial store data in a single request (reusing head prefetch on initial boot)
   async getBootstrap(): Promise<BootstrapData | null> {
     try {
+      const win = typeof window !== 'undefined' ? (window as any) : null;
+      if (win && win.__bootstrapPromise) {
+        const prefetchedPromise = win.__bootstrapPromise;
+        win.__bootstrapPromise = null;
+        const json = await prefetchedPromise;
+        if (json && json.data) {
+          return json.data;
+        }
+      }
       const res = await fetch('/api/bootstrap', {
         headers: {
           ...getAuthHeaders(),

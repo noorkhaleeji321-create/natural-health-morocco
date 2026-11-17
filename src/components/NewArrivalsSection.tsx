@@ -19,10 +19,10 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
   onViewAllProducts,
   isLoading = false,
 }) => {
-  const [visibleCount, setVisibleCount] = useState<number>(20);
+  const [visibleCount, setVisibleCount] = useState<number>(8);
 
   return (
-    <section id="new-arrivals" className="py-10 sm:py-20 bg-[#0A0F0D] border-t border-[#1C2822]">
+    <section id="new-arrivals" className="cv-below-fold py-10 sm:py-20 bg-[#0A0F0D] border-t border-[#1C2822]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 mt-[-31px] mb-0">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-10 pb-3 sm:pb-4 border-b border-[#212E27]">
@@ -73,7 +73,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
                   product={product}
                   onAddToCart={onAddToCart}
                   onViewDetails={onViewDetails}
-                  priority={index < 4}
+                  priority={false}
                 />
               ))}
             </div>
@@ -101,11 +101,11 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setVisibleCount((prev) => prev + 20)}
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
                   className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] text-white font-bold text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-orange-900/30 transition-all duration-200 transform hover:scale-[1.02] cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-amber-200" />
-                  <span>إظهار المزيد من المنتجات ({Math.min(20, products.length - visibleCount)} إضافية)</span>
+                  <span>إظهار المزيد من المنتجات ({Math.min(12, products.length - visibleCount)} إضافية)</span>
                 </button>
               </div>
             )}

@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0F1512]/95 backdrop-blur-md border-b border-[#212E27] shadow-lg">
+    <header className="sticky top-0 z-40 bg-[#0F1512] border-b border-[#212E27] shadow-lg">
       {/* Top Banner Notice - Moving Single-Line Ticker (Left to Right) */}
       <div className="bg-[#070A09] text-[#E5DCce] text-xs sm:text-sm py-2 px-2 border-b border-[#1A2620] overflow-hidden select-none">
         <div className="flex items-center w-full overflow-hidden" dir="ltr">
@@ -139,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         style={{ backgroundImage: `url(${NAVBAR_BANNER_BG})` }}
       >
         {/* Refined gradient overlay for stunning background depth and maximum text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B130E]/90 via-[#0B130E]/80 to-[#0B130E]/90 backdrop-blur-[0.5px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B130E]/92 via-[#0B130E]/82 to-[#0B130E]/92" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
@@ -171,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-extrabold text-base sm:text-2xl text-[#FAF5EC] tracking-tight font-['Cairo']">
                   {storeSettings.storeName}
                 </span>
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D97706] animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D97706]" />
               </div>
               <p className="text-[10px] sm:text-xs text-[#A89C89] font-medium hidden xs:block">
                 {storeSettings.storeSlogan}

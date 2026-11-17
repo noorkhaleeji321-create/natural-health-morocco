@@ -23,8 +23,8 @@ export function formatImageUrl(url?: string): string {
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
 
-  // 3. Already a jsDelivr CDN URL
-  if (trimmed.includes('cdn.jsdelivr.net/gh/')) {
+  // 3. Already a jsDelivr CDN or wsrv optimized URL
+  if (trimmed.includes('cdn.jsdelivr.net/gh/') || trimmed.includes('wsrv.nl/')) {
     return trimmed;
   }
 
@@ -59,15 +59,52 @@ export function formatImageUrl(url?: string): string {
 }
 
 /**
- * Handles image errors by falling back from local category assets to jsDelivr CDN,
- * then to GitHub raw content, and finally to DEFAULT_FALLBACK_IMAGE.
+ * Generates an edge-resized, compressed WebP thumbnail URL via wsrv.nl CDN
+ * for card grids & carousels (reduces 1024x1024 category/product files from ~150KB down to ~15KB).
+ * Falls back cleanly to direct jsDelivr/raw URL if onError triggers.
+ */
+export function formatThumbUrl(url?: string, width: number = 400, quality: number = 72): string {
+  const formatted = formatImageUrl(url);
+  if (!formatted) return '';
+
+  if (
+    formatted.startsWith('/') ||
+    formatted.startsWith('data:') ||
+    formatted.startsWith('blob:') ||
+    formatted.includes('wsrv.nl/')
+  ) {
+    return formatted;
+  }
+
+  if (formatted.startsWith('http://') || formatted.startsWith('https://')) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(formatted)}&w=${width}&q=${quality}&output=webp&we`;
+  }
+
+  return formatted;
+}
+
+/**
+ * Handles image errors by falling back:
+ * wsrv.nl -> direct jsDelivr/origin URL -> raw.githubusercontent.com -> DEFAULT_FALLBACK_IMAGE.
  * Usage: <img onError={handleImageError} ... />
  */
 export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
   const target = e.currentTarget;
   const currentSrc = target.src || '';
 
-  // If jsDelivr failed, fallback to raw.githubusercontent.com
+  // 1. If optimized wsrv.nl thumbnail failed, unwrap and fallback directly to source CDN URL
+  if (currentSrc.includes('wsrv.nl/')) {
+    try {
+      const parsed = new URL(currentSrc);
+      const original = parsed.searchParams.get('url');
+      if (original && original !== currentSrc) {
+        target.src = original;
+        return;
+      }
+    } catch {}
+  }
+
+  // 2. If jsDelivr failed, fallback to raw.githubusercontent.com
   if (currentSrc.includes('cdn.jsdelivr.net/gh/')) {
     const match = currentSrc.match(/https?:\/\/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^@]+)@([^\/]+)\/(.+)/);
     if (match) {
@@ -77,7 +114,7 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event
     }
   }
 
-  // Fallback to DEFAULT_FALLBACK_IMAGE if not already set
+  // 3. Fallback to DEFAULT_FALLBACK_IMAGE if not already set
   if (!currentSrc.includes(DEFAULT_FALLBACK_IMAGE)) {
     target.src = DEFAULT_FALLBACK_IMAGE;
   }

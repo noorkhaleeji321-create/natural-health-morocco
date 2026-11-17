@@ -16,7 +16,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
 
   const activeSlides = (slides && slides.length > 0) ? slides : initialHeroSlides;
 
-  // Defer background slides loading slightly so initial Slide 0 LCP has 100% network priority, then preload next slides promptly
+  // Defer background slides loading past initial LCP & category paint so Slide 0 gets 100% bandwidth
   useEffect(() => {
     const timer = setTimeout(() => {
       setCanLoadOtherSlides(true);
@@ -29,7 +29,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
         });
         preloadImages(nextSources);
       }
-    }, 900);
+    }, 3500);
     return () => clearTimeout(timer);
   }, [activeSlides]);
 
@@ -151,7 +151,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
                     className="w-full h-full object-cover object-center"
                     loading={idx === 0 ? 'eager' : 'lazy'}
                     fetchPriority={idx === 0 ? 'high' : 'low'}
-                    decoding={idx === 0 ? 'sync' : 'async'}
+                    decoding="async"
                     onError={handleImageError}
                   />
                 </picture>
@@ -164,7 +164,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
                   className="w-full h-full object-cover object-center"
                   loading={idx === 0 ? 'eager' : 'lazy'}
                   fetchPriority={idx === 0 ? 'high' : 'low'}
-                  decoding={idx === 0 ? 'sync' : 'async'}
+                  decoding="async"
                   onError={handleImageError}
                 />
               )
@@ -186,7 +186,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
             type="button"
             onClick={handlePrev}
             aria-label="الشريحة السابقة"
-            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0A0E0C]/60 hover:bg-[#D97706] text-white flex items-center justify-center backdrop-blur-md border border-white/10 transition-all duration-200 cursor-pointer shadow-lg hover:scale-105"
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0A0E0C]/75 hover:bg-[#D97706] text-white flex items-center justify-center border border-white/15 transition-colors duration-200 cursor-pointer shadow-lg hover:scale-105"
           >
             <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -194,7 +194,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
             type="button"
             onClick={handleNext}
             aria-label="الشريحة التالية"
-            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0A0E0C]/60 hover:bg-[#D97706] text-white flex items-center justify-center backdrop-blur-md border border-white/10 transition-all duration-200 cursor-pointer shadow-lg hover:scale-105"
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#0A0E0C]/75 hover:bg-[#D97706] text-white flex items-center justify-center border border-white/15 transition-colors duration-200 cursor-pointer shadow-lg hover:scale-105"
           >
             <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
