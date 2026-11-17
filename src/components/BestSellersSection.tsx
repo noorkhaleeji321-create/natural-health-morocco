@@ -19,7 +19,7 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
   onViewAllProducts,
   isLoading = false,
 }) => {
-  const [visibleCount, setVisibleCount] = useState<number>(4);
+  const [visibleCount, setVisibleCount] = useState<number>(20);
 
   return (
     <section id="best-sellers" className="pt-0 pb-[38px] px-[12px] max-w-7xl mx-auto">
@@ -100,11 +100,11 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
 
               <button
                 type="button"
-                onClick={() => setVisibleCount((prev) => prev + 16)}
+                onClick={() => setVisibleCount((prev) => prev + 20)}
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] text-white font-bold text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-orange-900/30 transition-all duration-200 transform hover:scale-[1.02] cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-200" />
-                <span>إظهار المزيد من المنتجات ({Math.min(16, products.length - visibleCount)} إضافية)</span>
+                <span>إظهار المزيد من المنتجات ({Math.min(20, products.length - visibleCount)} إضافية)</span>
               </button>
             </div>
           )}

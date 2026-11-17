@@ -19,7 +19,7 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
   onViewAllProducts,
   isLoading = false,
 }) => {
-  const [visibleCount, setVisibleCount] = useState<number>(8);
+  const [visibleCount, setVisibleCount] = useState<number>(20);
 
   return (
     <section id="new-arrivals" className="cv-below-fold py-10 sm:py-20 bg-[#0A0F0D] border-t border-[#1C2822]">
