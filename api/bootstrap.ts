@@ -1,0 +1,149 @@
+import fs from 'fs';
+import path from 'path';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
+
+let appPromise: Promise<any> | null = null;
+let dbPromise: Promise<any> | null = null;
+
+function loadFirebaseConfig(): Record<string, any> {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+
+  if (process.env.VITE_FIREBASE_API_KEY && process.env.VITE_FIREBASE_PROJECT_ID) {
+    return {
+      apiKey: process.env.VITE_FIREBASE_API_KEY,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.VITE_FIREBASE_APP_ID,
+      firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID,
+    };
+  }
+
+  throw new Error('Firebase configuration not found');
+}
+
+async function getDb() {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      try {
+        const config = loadFirebaseConfig();
+        if (!appPromise) {
+          appPromise = Promise.resolve(
+            getApps().find((a) => a.name === 'vercel-bootstrap') ||
+              initializeApp(config, 'vercel-bootstrap')
+          );
+        }
+        const app = await appPromise;
+        return getFirestore(app, config.firestoreDatabaseId);
+      } catch (err) {
+        appPromise = null;
+        dbPromise = null;
+        throw err;
+      }
+    })();
+  }
+  return dbPromise;
+}
+
+export default async function handler(req: any, res: any) {
+  try {
+    const db = await getDb();
+
+    const [prodSnap, catSnap, settingsSnap] = await Promise.all([
+      getDocs(collection(db, 'products')),
+      getDocs(collection(db, 'categories')),
+      getDocs(collection(db, 'settings')),
+    ]);
+
+    const products = prodSnap.docs
+      .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
+      .filter((p) => !p.status || p.status === 'approved');
+
+    const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Record<string, any>));
+
+    const settingsDoc = settingsSnap.docs.find((d) => d.id === 'main');
+    const bankDoc = settingsSnap.docs.find((d) => d.id === 'bank');
+    const heroDoc = settingsSnap.docs.find((d) => d.id === 'hero');
+
+    const rawSettings = settingsDoc ? (settingsDoc.data() as Record<string, any>) : null;
+    const publicStoreSettings = rawSettings
+      ? {
+          storeName: rawSettings.storeName,
+          storeSlogan: rawSettings.storeSlogan,
+          logoUrl: rawSettings.logoUrl,
+          phone: rawSettings.phone,
+          whatsapp: rawSettings.whatsapp,
+          address: rawSettings.address,
+          city: rawSettings.city,
+          openingHours: rawSettings.openingHours,
+          email: rawSettings.email,
+          freeShippingThreshold: rawSettings.freeShippingThreshold,
+          shippingFee: rawSettings.shippingFee,
+          currency: rawSettings.currency,
+          announcementText: rawSettings.announcementText,
+          showHeroSlider: rawSettings.showHeroSlider !== false,
+          aboutImageUrl: rawSettings.aboutImageUrl,
+          aboutBadgeYears: rawSettings.aboutBadgeYears,
+          aboutBadgeTitle: rawSettings.aboutBadgeTitle,
+          aboutBadgeSubtitle: rawSettings.aboutBadgeSubtitle,
+          aboutStoryP1: rawSettings.aboutStoryP1,
+          aboutStoryP2: rawSettings.aboutStoryP2,
+        }
+      : null;
+
+    const rawBank = bankDoc ? (bankDoc.data() as Record<string, any>) : null;
+    const publicBankSettings = rawBank
+      ? {
+          bankName: rawBank.bankName,
+          accountHolder: rawBank.accountHolder,
+          rib: rawBank.rib,
+          instructions: rawBank.instructions,
+          isBankTransferEnabled: rawBank.isBankTransferEnabled,
+          isCodEnabled: rawBank.isCodEnabled,
+          isCardEnabled: rawBank.isCardEnabled,
+          isPaypalEnabled: rawBank.isPaypalEnabled,
+          paymentMode: rawBank.paymentMode,
+          paddleVendorId: rawBank.paddleVendorId,
+          paddleClientToken: rawBank.paddleClientToken,
+          cardPublishableKey: rawBank.cardPublishableKey,
+          paypalClientId: rawBank.paypalClientId,
+        }
+      : null;
+
+    const rawHero = heroDoc ? (heroDoc.data() as Record<string, any>) : null;
+    const heroSlides = rawHero && Array.isArray(rawHero.slides) ? rawHero.slides : [];
+
+    const hasAuth = Boolean(req?.headers?.authorization);
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Cache-Control',
+      hasAuth ? 'no-store' : 'public, s-maxage=30, stale-while-revalidate=120'
+    );
+    res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          products,
+          categories,
+          storeSettings: publicStoreSettings,
+          bankSettings: publicBankSettings,
+          heroSlides,
+          orders: [],
+          customers: [],
+        },
+      })
+    );
+  } catch (err: any) {
+    console.error('[Vercel Bootstrap] Error:', err?.message || err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(JSON.stringify({ success: false, error: 'Failed to load storefront data' }));
+  }
+}

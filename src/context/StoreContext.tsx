@@ -425,6 +425,9 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
   const inFlightFetchRef = useRef<Promise<boolean> | null>(null);
   const lastFetchTimestampRef = useRef<number>(0);
   const cancelImageWarmupRef = useRef<(() => void) | null>(null);
+  const hasLoadedCatalogRef = useRef<boolean>(false);
+  const retryAttemptRef = useRef<number>(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSameContent = (a: any, b: any): boolean => {
     if (a === b) return true;
@@ -442,7 +445,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
   };
 
-  // Reload all data directly from Firebase Firestore (and admin bootstrap only when authenticated)
+  // Reload all data from live Firebase Firestore + fast same-origin /api/bootstrap race on initial cold load
   const loadFromServer = useCallback(async (includeAdminBootstrap: boolean = false): Promise<boolean> => {
     if (inFlightFetchRef.current) {
       return inFlightFetchRef.current;
@@ -459,9 +462,84 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           }
         })();
 
-        let firestoreLoaded = false;
+        const isInitialColdLoad = !hasLoadedCatalogRef.current;
+        let firestoreLoadedProducts = false;
+        let firestoreLoadedAny = false;
+        let bootstrapApplied = false;
 
-        // Query Firestore directly as primary source of truth when online
+        // Helper to apply bootstrap payload (only when direct Firestore hasn't already hydrated newer live data)
+        const applyBootstrapData = (data: any) => {
+          if (!data) return;
+          unstable_batchedUpdates(() => {
+            if (!firestoreLoadedProducts) {
+              if (Array.isArray(data.products) && data.products.length > 0) {
+                hasLoadedCatalogRef.current = true;
+                bootstrapApplied = true;
+                setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
+              }
+              if (Array.isArray(data.categories) && data.categories.length > 0) {
+                setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
+              }
+              if (data.storeSettings) {
+                setStoreSettings((prev) => {
+                  const merged = { ...prev, ...data.storeSettings };
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (data.bankSettings) {
+                setBankSettings((prev) => {
+                  const merged = { ...defaultBankSettings, ...prev, ...data.bankSettings };
+                  return isSameContent(prev, merged) ? prev : merged;
+                });
+              }
+              if (Array.isArray(data.heroSlides) && data.heroSlides.length > 0) {
+                setHeroSlides((prev) => (isSameContent(prev, data.heroSlides) ? prev : data.heroSlides));
+              }
+            }
+            if (Array.isArray(data.orders)) {
+              setOrders((prev) => mergeOrders(prev, data.orders));
+            }
+            if (data?.customers) {
+              setCustomers((prev) => {
+                const serverIds = new Set(data.customers.map((c: any) => c.id));
+                const onlyLocal = prev.filter((c) => !serverIds.has(c.id));
+                const merged = [...data.customers, ...onlyLocal];
+                return isSameContent(prev, merged) ? prev : merged;
+              });
+            }
+            if (data?.sellers && data.sellers.length > 0) {
+              setSellers((prev) => {
+                const serverIds = new Set(data.sellers!.map((s: any) => s.id));
+                const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
+                const merged = [...data.sellers!, ...onlyLocal];
+                return isSameContent(prev, merged) ? prev : merged;
+              });
+            }
+            if (data?.stores && data.stores.length > 0) {
+              setStores((prev) => {
+                const serverIds = new Set(data.stores!.map((s: any) => s.id));
+                const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
+                const merged = [...data.stores!, ...onlyLocal];
+                return isSameContent(prev, merged) ? prev : merged;
+              });
+            }
+            if (bootstrapApplied || firestoreLoadedProducts) {
+              setIsLoadingProducts(false);
+            }
+          });
+        };
+
+        // On first visit (cold browser cache) or admin session, start same-origin /api/bootstrap immediately in parallel
+        // so visitors see products right away without waiting for vendor-firebase chunk + 3rd-party TLS handshake.
+        const bootstrapPromise: Promise<any> | null =
+          isInitialColdLoad || isAdmin || !firebaseEnabled
+            ? api.getBootstrap().then((data) => {
+                if (data) applyBootstrapData(data);
+                return data;
+              }).catch(() => null)
+            : null;
+
+        // Query live Firestore directly in parallel (Promise.allSettled so one slow collection never drops others)
         if (firebaseEnabled && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
           const firestoreQueries: Promise<any>[] = [
             fsGetDocs('products'),
@@ -472,127 +550,110 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
             firestoreQueries.push(fsGetDocs('orders'));
           }
 
-          const firestoreSnaps = await withTimeout(
-            Promise.all(firestoreQueries),
-            8000,
+          const settledResults = await withTimeout(
+            Promise.allSettled(firestoreQueries),
+            20000,
             'Firebase connection timeout during load'
           ).catch((fErr) => {
             const msg = String(fErr?.message || fErr || '');
             if (msg.toLowerCase().includes('permission')) {
               handleFirestoreError(fErr, OperationType.LIST, 'products,categories,settings');
             } else {
-              console.warn('[StoreContext] Direct Firestore unavailable, falling back to API bootstrap:', msg);
+              console.warn('[StoreContext] Direct Firestore notice:', msg);
             }
             return null;
           });
 
-          if (firestoreSnaps && Array.isArray(firestoreSnaps)) {
-            firestoreLoaded = true;
-            const [prodSnap, catSnap, settingsSnap, ordersSnap] = firestoreSnaps;
-            const firestoreProducts = prodSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-            const firestoreCategories = catSnap.docs.map((d: any) => ({ ...d.data(), id: d.id }));
-            const settingsDoc = settingsSnap.docs.find((d: any) => d.id === 'main');
-            const bankDoc = settingsSnap.docs.find((d: any) => d.id === 'bank');
-            const heroDoc = settingsSnap.docs.find((d: any) => d.id === 'hero');
-            const firestoreOrders = ordersSnap ? ordersSnap.docs.map((d: any) => ({ ...d.data(), id: d.id })) : null;
+          if (settledResults && Array.isArray(settledResults)) {
+            const [prodRes, catRes, settingsRes, ordersRes] = settledResults;
+            const firestoreProducts =
+              prodRes?.status === 'fulfilled'
+                ? prodRes.value.docs.map((d: any) => ({ ...d.data(), id: d.id }))
+                : null;
+            const firestoreCategories =
+              catRes?.status === 'fulfilled'
+                ? catRes.value.docs.map((d: any) => ({ ...d.data(), id: d.id }))
+                : null;
 
-            unstable_batchedUpdates(() => {
-              setIsFirestoreActive(true);
-              if (Array.isArray(firestoreProducts)) {
-                setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
-              }
-              if (Array.isArray(firestoreCategories)) {
-                setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
-              }
-              if (settingsDoc && settingsDoc.data()) {
-                const fSettings = settingsDoc.data();
-                setStoreSettings((prev) => {
-                  const merged = { ...prev, ...fSettings };
-                  return isSameContent(prev, merged) ? prev : merged;
-                });
-              }
-              if (bankDoc && bankDoc.data()) {
-                const bSettings = bankDoc.data();
-                setBankSettings((prev) => {
-                  const merged = { ...defaultBankSettings, ...prev, ...bSettings };
-                  return isSameContent(prev, merged) ? prev : merged;
-                });
-              }
-              if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
-                const fSlides = heroDoc.data().slides;
-                setHeroSlides((prev) => (isSameContent(prev, fSlides) ? prev : fSlides));
-              }
-              if (firestoreOrders && Array.isArray(firestoreOrders)) {
-                setOrders((prev) => mergeOrders(prev, firestoreOrders));
-              }
-              setIsLoadingProducts(false);
-            });
-          }
-        }
+            const settingsDocs = settingsRes?.status === 'fulfilled' ? settingsRes.value.docs : [];
+            const settingsDoc = settingsDocs.find((d: any) => d.id === 'main');
+            const bankDoc = settingsDocs.find((d: any) => d.id === 'bank');
+            const heroDoc = settingsDocs.find((d: any) => d.id === 'hero');
+            const firestoreOrders =
+              ordersRes?.status === 'fulfilled'
+                ? ordersRes.value.docs.map((d: any) => ({ ...d.data(), id: d.id }))
+                : null;
 
-        // Fetch backend API bootstrap if Admin is logged in OR if direct Firestore is unavailable/failed
-        if (isAdmin || !firebaseEnabled || !firestoreLoaded) {
-          const data = await api.getBootstrap();
-          if (data) {
-            unstable_batchedUpdates(() => {
-              if (!firebaseEnabled || !firestoreLoaded) {
-                if (Array.isArray(data.products) && data.products.length > 0) {
-                  setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
+            if (firestoreProducts || firestoreCategories || settingsDocs.length > 0) {
+              firestoreLoadedAny = true;
+            }
+            if (Array.isArray(firestoreProducts) && firestoreProducts.length > 0) {
+              firestoreLoadedProducts = true;
+              hasLoadedCatalogRef.current = true;
+            }
+
+            if (firestoreLoadedAny) {
+              unstable_batchedUpdates(() => {
+                setIsFirestoreActive(true);
+                if (Array.isArray(firestoreProducts)) {
+                  setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
                 }
-                if (Array.isArray(data.categories) && data.categories.length > 0) {
-                  setCategories((prev) => (isSameContent(prev, data.categories) ? prev : data.categories));
+                if (Array.isArray(firestoreCategories)) {
+                  setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
                 }
-                if (data.storeSettings) {
+                if (settingsDoc && settingsDoc.data()) {
+                  const fSettings = settingsDoc.data();
                   setStoreSettings((prev) => {
-                    const merged = { ...prev, ...data.storeSettings };
+                    const merged = { ...prev, ...fSettings };
                     return isSameContent(prev, merged) ? prev : merged;
                   });
                 }
-                if (data.bankSettings) {
+                if (bankDoc && bankDoc.data()) {
+                  const bSettings = bankDoc.data();
                   setBankSettings((prev) => {
-                    const merged = { ...defaultBankSettings, ...prev, ...data.bankSettings };
+                    const merged = { ...defaultBankSettings, ...prev, ...bSettings };
                     return isSameContent(prev, merged) ? prev : merged;
                   });
                 }
-                if (Array.isArray(data.heroSlides) && data.heroSlides.length > 0) {
-                  setHeroSlides((prev) => (isSameContent(prev, data.heroSlides) ? prev : data.heroSlides));
+                if (heroDoc && heroDoc.data() && Array.isArray(heroDoc.data().slides)) {
+                  const fSlides = heroDoc.data().slides;
+                  setHeroSlides((prev) => (isSameContent(prev, fSlides) ? prev : fSlides));
                 }
-              }
-              if (Array.isArray(data.orders)) {
-                setOrders((prev) => mergeOrders(prev, data.orders));
-              }
-              if (data?.customers) {
-                setCustomers((prev) => {
-                  const serverIds = new Set(data.customers.map((c: any) => c.id));
-                  const onlyLocal = prev.filter((c) => !serverIds.has(c.id));
-                  const merged = [...data.customers, ...onlyLocal];
-                  return isSameContent(prev, merged) ? prev : merged;
-                });
-              }
-              if (data?.sellers && data.sellers.length > 0) {
-                setSellers((prev) => {
-                  const serverIds = new Set(data.sellers!.map((s: any) => s.id));
-                  const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
-                  const merged = [...data.sellers!, ...onlyLocal];
-                  return isSameContent(prev, merged) ? prev : merged;
-                });
-              }
-              if (data?.stores && data.stores.length > 0) {
-                setStores((prev) => {
-                  const serverIds = new Set(data.stores!.map((s: any) => s.id));
-                  const onlyLocal = prev.filter((s) => !serverIds.has(s.id));
-                  const merged = [...data.stores!, ...onlyLocal];
-                  return isSameContent(prev, merged) ? prev : merged;
-                });
-              }
-              setIsLoadingProducts(false);
-            });
+                if (firestoreOrders && Array.isArray(firestoreOrders)) {
+                  setOrders((prev) => mergeOrders(prev, firestoreOrders));
+                }
+                if (firestoreLoadedProducts) {
+                  setIsLoadingProducts(false);
+                }
+              });
+            }
           }
         }
 
-        setIsLoadingProducts(false);
+        // Wait for bootstrap if it was started, or fetch it as fallback if Firestore failed to load products
+        if (bootstrapPromise) {
+          await bootstrapPromise;
+        } else if (!firestoreLoadedProducts && !hasLoadedCatalogRef.current) {
+          const fallbackData = await api.getBootstrap().catch(() => null);
+          if (fallbackData) applyBootstrapData(fallbackData);
+        }
+
+        if (hasLoadedCatalogRef.current) {
+          retryAttemptRef.current = 0;
+          setIsLoadingProducts(false);
+        } else if (retryAttemptRef.current < 3) {
+          // Schedule automatic recovery retry if first visit failed completely due to transient cold network
+          retryAttemptRef.current += 1;
+          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = setTimeout(() => {
+            loadFromServer();
+          }, 2500);
+        } else {
+          setIsLoadingProducts(false);
+        }
+
         lastFetchTimestampRef.current = Date.now();
-        return true;
+        return hasLoadedCatalogRef.current;
       } catch (err) {
         console.warn('Database sync notice:', err);
         setIsLoadingProducts(false);
@@ -636,11 +697,9 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     };
   }, [products]);
 
-  // Sync immediately after initial render frame, periodically (5 mins), on tab focus (> 15s), and when back online
+  // Sync immediately on mount, periodically (5 mins), on tab focus (> 15s), and when back online
   useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      loadFromServer();
-    });
+    loadFromServer();
 
     const pollTimer = setInterval(() => {
       loadFromServer();
@@ -659,7 +718,10 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
       clearInterval(pollTimer);
       window.removeEventListener('focus', handleVisibilityOrFocus);
       window.removeEventListener('online', handleOnline);

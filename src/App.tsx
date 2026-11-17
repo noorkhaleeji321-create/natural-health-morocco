@@ -106,6 +106,9 @@ function MainAppContent() {
           updateProductSeo(found);
           return;
         }
+        if (isLoadingProducts && products.length === 0) {
+          return;
+        }
       }
 
       // 2. Direct Category URL: /category/:slug or ?category=:slug

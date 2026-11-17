@@ -53,6 +53,9 @@
   "functions": {
     "api/sitemap.ts": {
       "includeFiles": "firebase-applet-config.json"
+    },
+    "api/bootstrap.ts": {
+      "includeFiles": "firebase-applet-config.json"
     }
   },
   "rewrites": [
@@ -61,7 +64,7 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/api/((?!sitemap).*)",
+      "source": "/api/((?!sitemap|bootstrap).*)",
       "destination": "/api"
     },
     {
