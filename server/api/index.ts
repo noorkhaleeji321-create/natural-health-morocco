@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { dbService, validateAdminSession, createAdminSession } from '../services/dbService';
 import { getLiveFirestoreAdminPin } from '../services/firebaseAdmin';
+import { generateDynamicSitemapXml } from '../services/sitemapService';
 import { notifyNewOrder, getBotStatus, getBotLogs, formatWhatsAppOrderUrl, runAutomaticBackup } from '../services/botWorker';
 import { Order, Product, Category, Seller, StoreEntity, Customer, SellerStatus, ProductStatus } from '../../src/types';
 import path from 'path';
@@ -15,10 +16,27 @@ router.use((req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return next();
   }
+  if (req.path === '/sitemap') {
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return next();
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   next();
+});
+
+router.get('/sitemap', async (_req, res) => {
+  try {
+    const { xml } = await generateDynamicSitemapXml();
+    res.status(200);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.send(xml);
+  } catch (err: any) {
+    console.error('[API Sitemap] Failed to generate dynamic sitemap:', err?.message || err);
+    res.status(500).type('text/plain').send('Failed to generate sitemap');
+  }
 });
 
 // Image Proxy with 1-Year Immutable Caching & Auto-Optimization for Lighthouse Performance

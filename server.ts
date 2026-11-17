@@ -8,6 +8,7 @@ import { initSQLite, migrateData } from './server/services/dbService';
 import { initDatabase } from './server/dataStore';
 import apiRoutes from './server/api';
 import authRoutes from './server/auth';
+import { generateDynamicSitemapXml } from './server/services/sitemapService';
 
 async function startServer() {
   const app = express();
@@ -49,6 +50,22 @@ async function startServer() {
       }
     }
   };
+
+  // Dynamic XML Sitemap from live Firebase Firestore (no static file conflict)
+  const handleDynamicSitemap = async (_req: express.Request, res: express.Response) => {
+    try {
+      const { xml } = await generateDynamicSitemapXml();
+      res.status(200);
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.send(xml);
+    } catch (err: any) {
+      console.error('[Server Sitemap] Failed to generate dynamic sitemap:', err?.message || err);
+      res.status(500).type('text/plain').send('Failed to generate sitemap');
+    }
+  };
+  app.get('/sitemap.xml', handleDynamicSitemap);
+  app.get('/api/sitemap', handleDynamicSitemap);
 
   app.use(express.static(publicDir, staticOptions));
   app.use('/assets', express.static(path.join(publicDir, 'images', 'assets'), staticOptions));
