@@ -182,9 +182,9 @@ export const CartCheckoutPage: React.FC<CartCheckoutPageProps> = ({
       const sId = item.product.sellerId || 'seller-saeed';
       const store = stores.find((st) => st.id === item.product.storeId || st.sellerId === sId);
       const seller = sellers.find((s) => s.id === sId);
-      const storeName = store?.name || seller?.storeName || seller?.businessName || 'محل عند سعيد (المتجر الرئيسي)';
+      const storeName = store?.name || seller?.storeName || seller?.businessName || 'Natural Health Morocco (المتجر الرئيسي)';
       const storeSlug = store?.slug || (sId === 'seller-saeed' ? 'said-store' : '');
-      const sellerName = seller?.sellerName || seller?.businessName || 'سعيد أيت علي';
+      const sellerName = seller?.sellerName || seller?.businessName || 'Natural Health Morocco';
       const storeCity = store?.city || seller?.city || 'مراكش';
 
       if (!groups[sId]) {
@@ -487,7 +487,7 @@ export const CartCheckoutPage: React.FC<CartCheckoutPageProps> = ({
 
     const shippingText = orderShipping === 0 ? 'مجاني 🚚' : `${orderShipping} DH`;
 
-    const text = `السلام عليكم ورحمة الله،%0Aأود تأكيد طلبي من *عِطارة عند سعيد*%0A%0A*رقم الطلب:* %23${orderIdToUse}%0A*الاسم:* ${encodeURIComponent(custName)}%0A*الهاتف:* ${encodeURIComponent(custPhone)}%0A*المدينة:* ${encodeURIComponent(custCity)}%0A*العنوان:* ${encodeURIComponent(custAddress)}${notes ? `%0A*ملاحظات:* ${encodeURIComponent(notes)}` : ''}%0A*طريقة الدفع:* ${encodeURIComponent(paymentText)}%0A%0A*تفاصيل المنتجات:*%0A${itemsList}%0A%0A*مجموع المنتجات:* ${orderSubtotal} DH%0A*مصاريف التوصيل:* ${encodeURIComponent(shippingText)}%0A*المجموع الإجمالي المستحق:* *${orderTotal} DH*`;
+    const text = `السلام عليكم ورحمة الله،%0Aأود تأكيد طلبي من *عِطارة Natural Health Morocco*%0A%0A*رقم الطلب:* %23${orderIdToUse}%0A*الاسم:* ${encodeURIComponent(custName)}%0A*الهاتف:* ${encodeURIComponent(custPhone)}%0A*المدينة:* ${encodeURIComponent(custCity)}%0A*العنوان:* ${encodeURIComponent(custAddress)}${notes ? `%0A*ملاحظات:* ${encodeURIComponent(notes)}` : ''}%0A*طريقة الدفع:* ${encodeURIComponent(paymentText)}%0A%0A*تفاصيل المنتجات:*%0A${itemsList}%0A%0A*مجموع المنتجات:* ${orderSubtotal} DH%0A*مصاريف التوصيل:* ${encodeURIComponent(shippingText)}%0A*المجموع الإجمالي المستحق:* *${orderTotal} DH*`;
 
     const cleanPhone = (storeSettings.whatsapp || storeInfo.whatsapp).replace(/[^0-9]/g, '');
     return `https://wa.me/${cleanPhone}?text=${text}`;
