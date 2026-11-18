@@ -17,7 +17,7 @@ import {
   ShoppingBag,
   Sparkles,
   AlertCircle,
-  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
@@ -113,29 +113,42 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
   onNavigateToProducts,
   onNavigateToHome,
 }) => {
-  const { orders, findOrderByTracking, storeSettings } = useStore();
+  const { orders, products, trackOrder, storeSettings } = useStore();
 
   const [orderIdInput, setOrderIdInput] = useState(initialOrderId);
   const [phoneInput, setPhoneInput] = useState(initialPhone);
   const [searchedOrder, setSearchedOrder] = useState<Order | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Auto search if initial props provided
+  // Auto search if initial props or URL query params provided
   useEffect(() => {
     if (initialOrderId && initialPhone) {
+      setOrderIdInput(initialOrderId);
+      setPhoneInput(initialPhone);
       handleSearch(undefined, initialOrderId, initialPhone);
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const qOrderId = params.get('orderId') || params.get('id') || '';
+      const qPhone = params.get('phone') || '';
+      if (qOrderId && qPhone) {
+        setOrderIdInput(qOrderId);
+        setPhoneInput(qPhone);
+        handleSearch(undefined, qOrderId, qPhone);
+      }
     }
   }, [initialOrderId, initialPhone]);
 
-  const handleSearch = (
+  const handleSearch = async (
     e?: React.FormEvent,
     orderIdToSearch = orderIdInput,
     phoneToSearch = phoneInput
   ) => {
     if (e) e.preventDefault();
     setErrorMessage('');
-    setHasSearched(true);
 
     if (!orderIdToSearch.trim()) {
       setErrorMessage('يرجى إدخال رقم الطلب (مثال: SAID-982143 أو 982143)');
@@ -147,15 +160,25 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
       return;
     }
 
-    const found = findOrderByTracking(orderIdToSearch, phoneToSearch);
-    if (found) {
-      setSearchedOrder(found);
-      setErrorMessage('');
-    } else {
+    setIsSearching(true);
+    try {
+      const found = await trackOrder(orderIdToSearch, phoneToSearch);
+      if (found) {
+        setSearchedOrder(found);
+        setErrorMessage('');
+      } else {
+        setSearchedOrder(null);
+        setErrorMessage(
+          'لم يتم العثور على طلب يطابق هذا الرقم وهذا الهاتف. يرجى التأكد من صحة البيانات أو مراجعة رقم الطلب المستلم.'
+        );
+      }
+    } catch {
       setSearchedOrder(null);
       setErrorMessage(
-        'لم يتم العثور على طلب يطابق هذا الرقم وهذا الهاتف. يرجى التأكد من صحة البيانات أو مراجعة رقم الطلب المستلم.'
+        'تعذر التحقق من الطلب حالياً. يرجى المحاولة مرة أخرى بعد لحظات.'
       );
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -217,10 +240,20 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
           <div className="sm:col-span-2 flex items-end">
             <button
               type="submit"
-              className="w-full h-11 sm:h-11.5 bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-102 cursor-pointer"
+              disabled={isSearching}
+              className="w-full h-11 sm:h-11.5 bg-[#D97706] hover:bg-[#B45309] disabled:opacity-70 disabled:cursor-wait text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-102 cursor-pointer"
             >
-              <Search className="w-4 h-4" />
-              <span>بحث</span>
+              {isSearching ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جاري البحث...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  <span>بحث</span>
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -236,7 +269,19 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
       </div>
 
       {/* Result Display */}
-      {searchedOrder && (
+      {searchedOrder && (() => {
+        const orderStatusKey = (searchedOrder.status || searchedOrder.orderStatus || 'new') as OrderStatus;
+        const activeStatus = statusConfig[orderStatusKey] || statusConfig.new;
+        const progressWidth =
+          activeStatus.step <= 1
+            ? '15%'
+            : activeStatus.step === 2
+            ? '48%'
+            : activeStatus.step === 3
+            ? '80%'
+            : '100%';
+
+        return (
         <div className="space-y-6">
           {/* Status Tracker Card */}
           <div className="bg-[#101713] border border-[#213027] rounded-3xl p-6 sm:p-8 shadow-2xl">
@@ -249,13 +294,9 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
                     #{searchedOrder.id}
                   </h2>
                   <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                      statusConfig[searchedOrder.status].bg
-                    } ${statusConfig[searchedOrder.status].color} ${
-                      statusConfig[searchedOrder.status].border
-                    }`}
+                    className={`text-xs font-bold px-3 py-1 rounded-full border ${activeStatus.bg} ${activeStatus.color} ${activeStatus.border}`}
                   >
-                    {statusConfig[searchedOrder.status].label}
+                    {activeStatus.label}
                   </span>
                 </div>
               </div>
@@ -275,24 +316,15 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
               </div>
             </div>
 
-            {/* Stepper Timeline (if not cancelled) */}
-            {searchedOrder.status !== 'cancelled' ? (
+            {/* Stepper Timeline (if not cancelled or returned) */}
+            {orderStatusKey !== 'cancelled' && orderStatusKey !== 'returned' ? (
               <div className="py-8 sm:py-12">
                 <div className="relative">
                   {/* Progress Line */}
                   <div className="hidden sm:block absolute top-1/2 left-8 right-8 -translate-y-1/2 h-1 bg-[#1A2620] rounded-full z-0">
                     <div
                       className="bg-[#D97706] h-full transition-all duration-700 rounded-full"
-                      style={{
-                        width:
-                          searchedOrder.status === 'new'
-                            ? '15%'
-                            : searchedOrder.status === 'processing'
-                            ? '48%'
-                            : searchedOrder.status === 'shipped'
-                            ? '80%'
-                            : '100%',
-                      }}
+                      style={{ width: progressWidth }}
                     />
                   </div>
 
@@ -304,7 +336,7 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
                       { key: 'shipped', label: '3. تم الشحن', icon: Truck, num: 3 },
                       { key: 'delivered', label: '4. تم التسليم', icon: CheckCircle2, num: 4 },
                     ].map((step) => {
-                      const currentStepNum = statusConfig[searchedOrder.status].step;
+                      const currentStepNum = activeStatus.step;
                       const isCompleted = step.num <= currentStepNum;
                       const isCurrent = step.num === currentStepNum;
                       const IconComponent = step.icon;
@@ -365,10 +397,10 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-[#FAF5EC] mb-1">
-                      حالة الطلب الحالية: {statusConfig[searchedOrder.status].label}
+                      حالة الطلب الحالية: {activeStatus.label}
                     </h4>
                     <p className="text-xs sm:text-sm text-[#A89C89] leading-relaxed">
-                      {statusConfig[searchedOrder.status].desc}
+                      {activeStatus.desc}
                     </p>
                     {searchedOrder.statusNote && (
                       <div className="mt-2 text-xs text-[#F3BA63] bg-[#101713] p-2.5 rounded-lg border border-[#293B30]">
@@ -379,13 +411,15 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
                 </div>
               </div>
             ) : (
-              /* Cancelled Order Notice */
+              /* Cancelled / Returned Order Notice */
               <div className="my-6 p-6 rounded-2xl bg-[#271515] border border-[#EF4444]/40 flex items-start gap-4">
                 <XCircle className="w-8 h-8 text-[#EF4444] shrink-0" />
                 <div>
-                  <h3 className="text-base font-bold text-white mb-1">هذا الطلب ملغي</h3>
+                  <h3 className="text-base font-bold text-white mb-1">
+                    {orderStatusKey === 'returned' ? 'هذا الطلب مرتجع' : 'هذا الطلب ملغي'}
+                  </h3>
                   <p className="text-xs sm:text-sm text-[#FCA5A5] leading-relaxed">
-                    {searchedOrder.statusNote || statusConfig.cancelled.desc}
+                    {searchedOrder.statusNote || activeStatus.desc}
                   </p>
                 </div>
               </div>
@@ -485,34 +519,55 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
                 <span>محتويات الطرد ({searchedOrder.items.length} منتج):</span>
               </h3>
               <div className="divide-y divide-[#1D2B22] bg-[#141D17] rounded-2xl overflow-hidden border border-[#213027]">
-                {searchedOrder.items.map((item, idx) => {
-                  const matched = orders.flatMap(o => o.items).find(i => i.product?.id === item.product?.id)?.product;
-                  const isDefaultLogo = (img?: string) => !img || img.includes('WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg');
-                  const candidateImg = (item.product?.image || (item as any).image || (item as any).productImageSnapshot || '').trim();
-                  const displayImg = (!isDefaultLogo(candidateImg) && candidateImg !== '' ? candidateImg : undefined) ||
+                {(searchedOrder.items || []).map((item, idx) => {
+                  const itemProdId = item.product?.id || (item as any).productId;
+                  const catalogProd = products.find((p) => p.id === itemProdId);
+                  const matched =
+                    catalogProd ||
+                    orders.flatMap((o) => o.items || []).find((i) => i.product?.id === itemProdId)?.product;
+                  const isDefaultLogo = (img?: string) =>
+                    !img || img.includes('WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg');
+                  const candidateImg = (
+                    item.product?.image ||
+                    (item as any).image ||
+                    (item as any).productImageSnapshot ||
+                    ''
+                  ).trim();
+                  const displayImg =
+                    (!isDefaultLogo(candidateImg) && candidateImg !== '' ? candidateImg : undefined) ||
                     (matched?.image && matched.image.trim() !== '' ? matched.image.trim() : undefined) ||
                     '/assets/aistudio/WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg';
+                  const itemName =
+                    item.product?.name ||
+                    (item as any).productNameSnapshot ||
+                    (item as any).productName ||
+                    matched?.name ||
+                    'منتج طبيعي';
+                  const itemPrice =
+                    Number(item.product?.price ?? (item as any).unitPrice ?? matched?.price ?? 0);
+                  const itemUnit =
+                    item.selectedWeight || item.product?.unit || (item as any).unit || matched?.unit || '';
 
                   return (
                     <div
-                      key={`${item.product?.id || idx}-${idx}`}
+                      key={`${itemProdId || idx}-${idx}`}
                       className="p-3 sm:p-4 flex items-center justify-between gap-3 text-xs sm:text-sm"
                     >
                       <div className="flex items-center gap-3">
                         <img
                           src={displayImg}
-                          alt={item.product?.name || 'منتج'}
+                          alt={itemName}
                           className="w-12 h-12 rounded-xl object-cover border border-[#25362C]"
                         />
                         <div>
-                          <h4 className="font-bold text-white font-['Cairo']">{item.product?.name || 'منتج طبيعي'}</h4>
+                          <h4 className="font-bold text-white font-['Cairo']">{itemName}</h4>
                           <span className="text-[11px] text-[#A89C89]">
-                            {item.quantity} × {item.product?.price || 0} DH ({item.product?.unit || ''})
+                            {item.quantity} × {itemPrice} DH {itemUnit ? `(${itemUnit})` : ''}
                           </span>
                         </div>
                       </div>
                       <span className="font-mono font-bold text-[#F59E0B]">
-                        {item.quantity * (item.product?.price || 0)} DH
+                        {item.quantity * itemPrice} DH
                       </span>
                     </div>
                   );
@@ -552,7 +607,8 @@ export const OrderTrackingPage: React.FC<OrderTrackingPageProps> = ({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

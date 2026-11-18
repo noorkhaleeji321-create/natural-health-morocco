@@ -94,3 +94,104 @@ export async function getLiveFirestoreStorefrontFallback() {
     return cachedCatalog?.data || null;
   }
 }
+
+function toAsciiDigits(input: string): string {
+  return String(input || '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+}
+
+export function normalizeTrackingPhone(raw: string): string {
+  let digits = toAsciiDigits(raw).replace(/\D/g, '');
+  if (digits.startsWith('00212') && digits.length >= 13) {
+    digits = digits.slice(5);
+  } else if (digits.startsWith('212') && digits.length >= 11) {
+    digits = digits.slice(3);
+  }
+  if (digits.startsWith('0') && digits.length >= 9) {
+    digits = digits.slice(1);
+  }
+  return digits;
+}
+
+export function normalizeTrackingOrderId(raw: string): string {
+  return toAsciiDigits(raw).trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+}
+
+export function doesOrderMatchTracking(order: Record<string, any>, rawOrderId: string, rawPhone: string): boolean {
+  if (!order) return false;
+  const queryId = normalizeTrackingOrderId(rawOrderId);
+  if (!queryId) return false;
+
+  const candidateIds = [order.id, order.orderNumber]
+    .filter(Boolean)
+    .map((v) => normalizeTrackingOrderId(String(v)));
+
+  const idMatched = candidateIds.some((oId) => {
+    if (oId === queryId) return true;
+    if (oId === `SAID-${queryId}`) return true;
+    if (queryId.length >= 4 && (oId.endsWith(`-${queryId}`) || oId.endsWith(queryId))) return true;
+    return false;
+  });
+
+  if (!idMatched) return false;
+
+  const storedPhone =
+    order.customer?.phone ||
+    order.customerPhoneSnapshot ||
+    order.phone ||
+    '';
+
+  const a = normalizeTrackingPhone(String(storedPhone));
+  const b = normalizeTrackingPhone(String(rawPhone));
+  if (!a || !b || a.length < 6 || b.length < 6) return false;
+  if (a === b) return true;
+  if (a.length >= 8 && b.length >= 8) {
+    return a.slice(-9) === b.slice(-9) || a.endsWith(b) || b.endsWith(a);
+  }
+  return false;
+}
+
+/**
+ * Finds a single order in live Firestore matching both order ID and customer phone.
+ */
+export async function findLiveFirestoreOrderByTracking(rawOrderId: string, rawPhone: string): Promise<any | null> {
+  const db = getDbInstance();
+  if (!db) return null;
+  try {
+    const cleanId = normalizeTrackingOrderId(rawOrderId);
+    const directCandidates = Array.from(
+      new Set([
+        cleanId,
+        cleanId.startsWith('SAID-') ? cleanId : `SAID-${cleanId}`,
+      ].filter(Boolean))
+    );
+
+    for (const candidateDocId of directCandidates) {
+      try {
+        const snap = await getDoc(doc(db, 'orders', candidateDocId));
+        if (snap.exists()) {
+          const order = { ...snap.data(), id: snap.id };
+          if (doesOrderMatchTracking(order, rawOrderId, rawPhone)) {
+            return order;
+          }
+        }
+      } catch {
+        // Continue to next candidate
+      }
+    }
+
+    const snap = await getDocs(collection(db, 'orders'));
+    for (const d of snap.docs) {
+      const order = { ...d.data(), id: d.id };
+      if (doesOrderMatchTracking(order, rawOrderId, rawPhone)) {
+        return order;
+      }
+    }
+    return null;
+  } catch (err: any) {
+    console.warn('[FirebaseAdmin] Order tracking lookup warning:', err?.message || err);
+    return null;
+  }
+}
+

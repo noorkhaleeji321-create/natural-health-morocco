@@ -109,7 +109,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         setOrderNumber(res.order.id);
         setConfirmedOrder(res.order);
         setChildOrders(res.sellerOrders || []);
-        addOrderToLocal(res.order);
+        addOrderToLocal(res.order, true);
         refreshData().catch(console.warn);
         setStep('success');
         return;

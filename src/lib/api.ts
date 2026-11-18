@@ -853,6 +853,33 @@ export const api = {
     }
   },
 
+  async trackOrder(orderId: string, phone: string): Promise<{
+    success: boolean;
+    order?: Order;
+    error?: string;
+  }> {
+    try {
+      const params = new URLSearchParams({
+        orderId: orderId.trim(),
+        phone: phone.trim(),
+      });
+      const res = await fetch(`/api/track-order?${params.toString()}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success && data?.order) {
+        return { success: true, order: data.order };
+      }
+      return {
+        success: false,
+        error: data?.error,
+      };
+    } catch (err: any) {
+      console.warn('[API] trackOrder failed:', err?.message || err);
+      return { success: false };
+    }
+  },
+
   // Search Unsplash photos helper
   async searchUnsplash(query: string, perPage: number = 12): Promise<{ id: string; url: string; thumb: string; description: string; photographer: string }[]> {
     try {

@@ -1,7 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { dbService, validateAdminSession, createAdminSession } from '../services/dbService';
-import { getLiveFirestoreAdminPin, getLiveFirestoreStorefrontFallback } from '../services/firebaseAdmin';
+import {
+  getLiveFirestoreAdminPin,
+  getLiveFirestoreStorefrontFallback,
+  findLiveFirestoreOrderByTracking,
+  doesOrderMatchTracking,
+} from '../services/firebaseAdmin';
 import { generateDynamicSitemapXml } from '../services/sitemapService';
 import { notifyNewOrder, getBotStatus, getBotLogs, formatWhatsAppOrderUrl, runAutomaticBackup } from '../services/botWorker';
 import { Order, Product, Category, Seller, StoreEntity, Customer, SellerStatus, ProductStatus } from '../../src/types';
@@ -425,6 +430,47 @@ router.post('/orders/checkout', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Public customer order tracking: verifies both orderId and phone, returns only the matched order
+const handleTrackOrder = async (req: express.Request, res: express.Response) => {
+  try {
+    const rawOrderId = String(req.query?.orderId || req.body?.orderId || '').trim();
+    const rawPhone = String(req.query?.phone || req.body?.phone || '').trim();
+
+    if (!rawOrderId || !rawPhone) {
+      return res.status(400).json({
+        success: false,
+        error: 'يرجى إدخال رقم الطلب ورقم الهاتف المسجل.',
+      });
+    }
+
+    // 1. Check live Firestore first for freshest admin status updates
+    const firestoreOrder = await findLiveFirestoreOrderByTracking(rawOrderId, rawPhone);
+    if (firestoreOrder) {
+      return res.json({ success: true, order: firestoreOrder });
+    }
+
+    // 2. Fallback to local SQLite orders store
+    const localOrders = dbService.getOrders() || [];
+    const localMatch = localOrders.find((o: any) => doesOrderMatchTracking(o, rawOrderId, rawPhone));
+    if (localMatch) {
+      return res.json({ success: true, order: localMatch });
+    }
+
+    return res.status(404).json({
+      success: false,
+      error: 'لم يتم العثور على طلب يطابق هذا الرقم وهذا الهاتف. يرجى التأكد من صحة البيانات أو مراجعة رقم الطلب المستلم.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: 'تعذر التحقق من الطلب حالياً، يرجى المحاولة بعد لحظات.',
+    });
+  }
+};
+
+router.get('/track-order', handleTrackOrder);
+router.post('/track-order', handleTrackOrder);
 
 // ==========================================
 // BOT WORKER & WHATSAPP MONITOR ENDPOINTS

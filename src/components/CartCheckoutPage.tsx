@@ -148,7 +148,7 @@ export const CartCheckoutPage: React.FC<CartCheckoutPageProps> = ({
           setOrderNumber(res.order.id);
           setConfirmedOrder(res.order);
           setChildOrders(res.sellerOrders || []);
-          addOrderToLocal(res.order);
+          addOrderToLocal(res.order, true);
           onClearCart();
           setStage('success');
           window.scrollTo({ top: 0, behavior: 'smooth' });

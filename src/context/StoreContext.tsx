@@ -146,6 +146,7 @@ interface StoreContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => Promise<void>;
   deleteOrder: (orderId: string) => Promise<void>;
   findOrderByTracking: (orderId: string, phone: string) => Order | undefined;
+  trackOrder: (orderId: string, phone: string) => Promise<Order | null>;
 
   // Customers & Auth
   customers: Customer[];
@@ -188,7 +189,7 @@ interface StoreContextType {
 
   refreshData: () => Promise<boolean>;
   loadFromServer: (includeAdminBootstrap?: boolean) => Promise<boolean>;
-  addOrderToLocal: (order: Order) => void;
+  addOrderToLocal: (order: Order, syncToCloud?: boolean) => void;
 
   // Defaults Reset
   resetToDefaults: () => void;
@@ -1020,8 +1021,17 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     return newOrder;
   };
 
-  const addOrderToLocal = (order: Order) => {
+  const addOrderToLocal = (order: Order, syncToCloud: boolean = false) => {
     setOrders((prev) => mergeOrders(prev, [order]));
+    if (syncToCloud && order?.id && isFirebaseConfigured()) {
+      syncFirestoreWrite(
+        OperationType.WRITE,
+        `orders/${order.id}`,
+        () => fsSetDoc('orders', order.id, cleanForFirestore(order), true)
+      ).catch((err) => {
+        console.warn('[StoreContext] Background Firestore order sync notice:', err);
+      });
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus, note?: string) => {
@@ -1088,17 +1098,113 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
   };
 
-  const findOrderByTracking = (orderId: string, phone: string): Order | undefined => {
-    const cleanOrderId = orderId.trim().toUpperCase().replace('#', '');
-    const cleanPhone = phone.trim().replace(/[\s-+]/g, '');
+  const toAsciiDigits = (input: string): string =>
+    String(input || '')
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
 
-    return orders.find((o) => {
-      const oId = o.id.toUpperCase().replace('#', '');
-      const oPhone = o.customer.phone.replace(/[\s-+]/g, '');
-      const matchId = oId === cleanOrderId || oId.endsWith(cleanOrderId);
-      const matchPhone = oPhone.endsWith(cleanPhone) || cleanPhone.endsWith(oPhone);
-      return matchId && matchPhone;
-    });
+  const normalizeTrackingPhone = (raw: string): string => {
+    let digits = toAsciiDigits(raw).replace(/\D/g, '');
+    if (digits.startsWith('00212') && digits.length >= 13) {
+      digits = digits.slice(5);
+    } else if (digits.startsWith('212') && digits.length >= 11) {
+      digits = digits.slice(3);
+    }
+    if (digits.startsWith('0') && digits.length >= 9) {
+      digits = digits.slice(1);
+    }
+    return digits;
+  };
+
+  const normalizeTrackingOrderId = (raw: string): string =>
+    toAsciiDigits(raw).trim().toUpperCase().replace(/^#+/, '').replace(/\s+/g, '');
+
+  const isOrderMatchingTracking = (o: any, orderId: string, phone: string): boolean => {
+    if (!o) return false;
+    const cleanOrderId = normalizeTrackingOrderId(orderId);
+    const cleanPhone = normalizeTrackingPhone(phone);
+    if (!cleanOrderId || !cleanPhone || cleanPhone.length < 6) return false;
+
+    const candidateIds = [o.id, o.orderNumber]
+      .filter(Boolean)
+      .map((v) => normalizeTrackingOrderId(String(v)));
+
+    const matchId = candidateIds.some(
+      (oId) =>
+        oId === cleanOrderId ||
+        oId === `SAID-${cleanOrderId}` ||
+        (cleanOrderId.length >= 4 && (oId.endsWith(`-${cleanOrderId}`) || oId.endsWith(cleanOrderId)))
+    );
+    if (!matchId) return false;
+
+    const oPhone = normalizeTrackingPhone(
+      String(o.customer?.phone || o.customerPhoneSnapshot || o.phone || '')
+    );
+    if (!oPhone || oPhone.length < 6) return false;
+    if (oPhone === cleanPhone) return true;
+    if (oPhone.length >= 8 && cleanPhone.length >= 8) {
+      return (
+        oPhone.slice(-9) === cleanPhone.slice(-9) ||
+        oPhone.endsWith(cleanPhone) ||
+        cleanPhone.endsWith(oPhone)
+      );
+    }
+    return false;
+  };
+
+  const findOrderByTracking = (orderId: string, phone: string): Order | undefined => {
+    return orders.find((o) => isOrderMatchingTracking(o, orderId, phone));
+  };
+
+  const trackOrder = async (orderId: string, phone: string): Promise<Order | null> => {
+    const cleanId = normalizeTrackingOrderId(orderId);
+    if (!cleanId || !normalizeTrackingPhone(phone)) {
+      return null;
+    }
+
+    // 1. Check same-origin API (queries live Firestore & SQLite on server for latest status)
+    const apiRes = await api.trackOrder(orderId, phone);
+    if (apiRes.success && apiRes.order) {
+      setOrders((prev) => mergeOrders(prev, [apiRes.order!]));
+      return apiRes.order;
+    }
+
+    // 2. Fallback to direct Firestore lookup if API unavailable or unreachable
+    if (isFirebaseConfigured() && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+      try {
+        const directCandidates = Array.from(
+          new Set([cleanId, cleanId.startsWith('SAID-') ? cleanId : `SAID-${cleanId}`].filter(Boolean))
+        );
+        for (const docId of directCandidates) {
+          try {
+            const snap = await withTimeout(fsGetDoc('orders', docId), 10000);
+            if (snap?.exists()) {
+              const candidateOrder = { ...snap.data(), id: snap.id } as Order;
+              if (isOrderMatchingTracking(candidateOrder, orderId, phone)) {
+                setOrders((prev) => mergeOrders(prev, [candidateOrder]));
+                return candidateOrder;
+              }
+            }
+          } catch {
+            // Try next candidate
+          }
+        }
+
+        const snap = await withTimeout(fsGetDocs('orders'), 12000);
+        for (const d of snap.docs) {
+          const candidateOrder = { ...d.data(), id: d.id } as Order;
+          if (isOrderMatchingTracking(candidateOrder, orderId, phone)) {
+            setOrders((prev) => mergeOrders(prev, [candidateOrder]));
+            return candidateOrder;
+          }
+        }
+      } catch (err) {
+        console.warn('[StoreContext] Direct Firestore order tracking fallback notice:', err);
+      }
+    }
+
+    // 3. Final fallback to in-memory orders (e.g. offline right after checkout)
+    return findOrderByTracking(orderId, phone) || null;
   };
 
   // Customer & Auth Actions (حسابات الزبائن وتسجيل الدخول والتسجيل)
@@ -1561,6 +1667,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       updateOrderStatus,
       deleteOrder,
       findOrderByTracking,
+      trackOrder,
       customers,
       currentUser,
       registerCustomer,
