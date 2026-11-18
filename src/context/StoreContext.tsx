@@ -700,20 +700,19 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     return fetchPromise;
   }, []);
 
-  // Warm offscreen category WebP thumbnails gently AFTER Hero LCP & first 4 cards finish loading
+  // Warm all category WebP thumbnails immediately after Hero LCP settles
   useEffect(() => {
     if (cancelCategoryWarmupRef.current) {
       cancelCategoryWarmupRef.current();
       cancelCategoryWarmupRef.current = null;
     }
-    if (categories.length <= 4) return;
+    if (categories.length === 0) return;
 
-    const remainingCatThumbs = categories
-      .slice(4)
+    const allCatThumbs = categories
       .map((c) => formatThumbUrl(c.image, 360, 70))
       .filter(Boolean);
 
-    cancelCategoryWarmupRef.current = preloadImagesBatched(remainingCatThumbs, 4, 300, 2600);
+    cancelCategoryWarmupRef.current = preloadImagesBatched(allCatThumbs, 8, 60, 350);
 
     return () => {
       if (cancelCategoryWarmupRef.current) {
@@ -723,7 +722,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     };
   }, [categories]);
 
-  // Warm visible product WebP thumbnails quietly in background after initial page paint/TBT window
+  // Warm all 20 visible Best Sellers & 20 visible New Arrivals thumbnails immediately after Hero LCP
   useEffect(() => {
     if (cancelImageWarmupRef.current) {
       cancelImageWarmupRef.current();
@@ -732,11 +731,11 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     if (products.length === 0) return;
 
     const prioritizedThumbUrls = [
-      ...products.filter((p) => p.isBestSeller).slice(0, 12).map((p) => formatThumbUrl(p.image, 420, 72)),
-      ...products.filter((p) => p.isNew).slice(0, 8).map((p) => formatThumbUrl(p.image, 420, 72)),
+      ...products.filter((p) => p.isBestSeller && p.inStock !== false).slice(0, 20).map((p) => formatThumbUrl(p.image, 420, 72)),
+      ...products.filter((p) => p.isNew && p.inStock !== false).slice(0, 20).map((p) => formatThumbUrl(p.image, 420, 72)),
     ];
 
-    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedThumbUrls, 4, 350, 4200);
+    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedThumbUrls, 8, 60, 600);
 
     return () => {
       if (cancelImageWarmupRef.current) {

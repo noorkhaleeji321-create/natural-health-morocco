@@ -9,6 +9,7 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
   onViewDetails?: (product: Product) => void;
   priority?: boolean;
+  eager?: boolean;
   whatsappNumber?: string;
 }
 
@@ -25,6 +26,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onAddToCart,
   onViewDetails,
   priority = false,
+  eager = false,
   whatsappNumber,
 }) => {
   const [added, setAdded] = useState(false);
@@ -79,9 +81,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             width={400}
             height={400}
             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
-            loading={priority ? 'eager' : 'lazy'}
-            fetchPriority={priority ? 'high' : 'low'}
-            decoding="async"
+            loading={priority || eager ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : eager ? 'auto' : 'low'}
+            decoding={priority ? 'sync' : 'async'}
             onError={handleImageError}
           />
         ) : null}

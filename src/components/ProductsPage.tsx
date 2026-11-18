@@ -348,7 +348,8 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                   product={product}
                   onAddToCart={onAddToCart}
                   onViewDetails={onViewProduct}
-                  priority={index < 12}
+                  priority={index < 8}
+                  eager
                 />
               ))}
             </div>

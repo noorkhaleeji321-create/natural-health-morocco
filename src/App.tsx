@@ -66,7 +66,7 @@ const LazyBelowFold: React.FC<{ children: React.ReactNode; fallback: React.React
             observer?.disconnect();
           }
         },
-        { rootMargin: '200px 0px' }
+        { rootMargin: '450px 0px' }
       );
       observer.observe(hostRef.current);
     }
@@ -487,6 +487,7 @@ function MainAppContent() {
                     product={product}
                     onAddToCart={handleAddToCart}
                     onViewDetails={handleViewProduct}
+                    eager
                   />
                 ))}
               </div>
@@ -584,7 +585,7 @@ function MainAppContent() {
 
             <LazyBelowFold
               fallback={<div className="min-h-[420px] bg-[#0A0F0D] border-t border-[#1C2822]" aria-hidden="true" />}
-              delayMs={4000}
+              delayMs={1200}
             >
               <NewArrivalsSection
                 products={filteredNewArrivals}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, Search, Menu, X, Phone, ShieldCheck, Sparkles, MapPin, Truck, Sliders } from 'lucide-react';
 import { storeInfo } from '../data/storeData';
 import { useStore } from '../context/StoreContext';
-import { formatImageUrl, handleImageError } from '../lib/utils';
+import { formatThumbUrl, handleImageError } from '../lib/utils';
 
 const NAVBAR_BANNER_BG = '/assets/images/navbar_banner_bg_1793276977619.webp';
 
@@ -150,12 +150,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={(e) => handleLinkClick(e, 'home', '#home')}
             className="flex items-center gap-2 sm:gap-3 shrink-0 group"
           >
-            {formatImageUrl(storeSettings.logoUrl) ? (
+            {formatThumbUrl(storeSettings.logoUrl, 96, 75) ? (
               <img
-                src={formatImageUrl(storeSettings.logoUrl)}
+                src={formatThumbUrl(storeSettings.logoUrl, 96, 75)}
                 alt="شعار المتجر"
                 width={48}
                 height={48}
+                decoding="sync"
                 className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl object-cover shadow-md sm:shadow-lg border border-[#D97706]/40 group-hover:scale-105 transition-transform shrink-0"
                 onError={handleImageError}
               />

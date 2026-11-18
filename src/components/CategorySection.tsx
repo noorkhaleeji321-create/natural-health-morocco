@@ -12,7 +12,7 @@ interface CategorySectionProps {
 }
 
 const CategoryCardImage: React.FC<{ src: string; alt: string; isEager?: boolean; isHighPriority?: boolean }> = React.memo(
-  ({ src, alt, isEager = false, isHighPriority = false }) => (
+  ({ src, alt, isEager = true, isHighPriority = false }) => (
     <img
       src={src}
       alt={alt}
@@ -20,8 +20,8 @@ const CategoryCardImage: React.FC<{ src: string; alt: string; isEager?: boolean;
       height={176}
       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
       loading={isEager ? 'eager' : 'lazy'}
-      fetchPriority={isHighPriority ? 'high' : 'low'}
-      decoding="async"
+      fetchPriority={isHighPriority ? 'high' : 'auto'}
+      decoding={isHighPriority ? 'sync' : 'async'}
       onError={handleImageError}
     />
   )
@@ -104,8 +104,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                       <CategoryCardImage
                         src={formattedImg}
                         alt={cat.name}
-                        isEager={index < 8}
-                        isHighPriority={index < 3}
+                        isEager={true}
+                        isHighPriority={index < 6}
                       />
                     ) : null}
                     <div
