@@ -161,7 +161,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       })
       .join('\n');
 
-    return `السلام عليكم ورحمة الله،\nأود تأكيد طلبي من عِطارة عند سعيد.\n\nرقم الطلب: #${orderIdToUse}\nالاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة والعنوان: ${city} - ${address}\nطريقة الدفع: ${paymentMethod === 'cod' ? 'الدفع نقداً عند الاستلام' : 'تحويل بنكي'}\n\nالمنتجات المطلوبة:\n${itemsList}\n\nمجموع المنتجات: ${finalSubtotal} د.م\nمصاريف التوصيل: ${finalShipping === 0 ? 'مجاني 🚚' : `${finalShipping} د.م`}\nالمجموع الإجمالي الواجب أداؤه: ${finalTotal} درهم مغربي.`;
+    return `السلام عليكم ورحمة الله،\nأود تأكيد طلبي من عِطارة Natural Health Morocco.\n\nرقم الطلب: #${orderIdToUse}\nالاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة والعنوان: ${city} - ${address}\nطريقة الدفع: ${paymentMethod === 'cod' ? 'الدفع نقداً عند الاستلام' : 'تحويل بنكي'}\n\nالمنتجات المطلوبة:\n${itemsList}\n\nمجموع المنتجات: ${finalSubtotal} د.م\nمصاريف التوصيل: ${finalShipping === 0 ? 'مجاني 🚚' : `${finalShipping} د.م`}\nالمجموع الإجمالي الواجب أداؤه: ${finalTotal} درهم مغربي.`;
   };
 
   if (!isOpen) return null;
