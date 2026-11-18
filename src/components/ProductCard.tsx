@@ -58,6 +58,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   };
 
   const shortDesc = getShortDescription(product.description);
+  const currentPriceNum = Number(product.price) || 0;
+  const oldPriceNum = Number(product.oldPrice) || 0;
+  const hasOldPrice = oldPriceNum > currentPriceNum;
+  const discountPercent = hasOldPrice
+    ? Math.round(((oldPriceNum - currentPriceNum) / oldPriceNum) * 100)
+    : 0;
 
   return (
     <div
@@ -111,6 +117,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           )}
         </div>
 
+        {/* Discount Badge Overlay */}
+        {hasOldPrice && discountPercent > 0 && (
+          <div className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 z-10">
+            <span
+              className="inline-flex items-center bg-[#DC2626] text-white text-[9px] sm:text-[11px] font-black px-1.5 sm:px-2 py-0.5 rounded-full shadow-md font-mono"
+              dir="ltr"
+            >
+              -{discountPercent}%
+            </span>
+          </div>
+        )}
+
         {/* Category Pill */}
         <div className="absolute bottom-1.5 right-1.5 sm:bottom-2.5 sm:right-2.5 z-10">
           <span className="bg-black/90 text-[#FAF5EC] text-[8.5px] sm:text-[10.5px] px-1.5 sm:px-2 py-0.5 rounded-md font-medium border border-white/10">
@@ -162,14 +180,24 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* Price, Unit & Action */}
         <div className="pt-1.5 sm:pt-2.5 mt-1.5 sm:mt-2.5 border-t border-[#202D25] space-y-1.5 sm:space-y-2.5">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-baseline gap-1">
-              <span className="text-sm sm:text-xl font-black text-[#FAF5EC] font-['Cairo']">
-                {product.price}
-              </span>
-              <span className="text-[9px] sm:text-xs font-bold text-[#F59E0B]">DH</span>
+          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-sm sm:text-xl font-black text-[#FAF5EC] font-['Cairo']">
+                  {product.price}
+                </span>
+                <span className="text-[9px] sm:text-xs font-bold text-[#F59E0B]">DH</span>
+              </div>
+              {hasOldPrice && (
+                <span
+                  className="text-[10px] sm:text-xs text-[#8E8272] line-through font-mono decoration-[#EF4444]/70"
+                  aria-label={`السعر القديم ${oldPriceNum} درهم`}
+                >
+                  {oldPriceNum} DH
+                </span>
+              )}
             </div>
-            <span className="text-[8.5px] sm:text-[10px] text-[#A89C89] font-medium bg-[#1A2520] border border-[#28392F] px-1 py-0.5 rounded-xs sm:rounded-sm">
+            <span className="text-[8.5px] sm:text-[10px] text-[#A89C89] font-medium bg-[#1A2520] border border-[#28392F] px-1 py-0.5 rounded-xs sm:rounded-sm shrink-0">
               {product.unit}
             </span>
           </div>

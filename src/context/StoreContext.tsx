@@ -268,7 +268,14 @@ export const mapServerProduct = (item: any, idx: number): Product => {
     name: item.name || item.product_name || item.title || 'منتج طبيعي',
     category: item.category || item.category_name || 'المنتجات الطبيعية الصحراوية',
     price: Number(item.price || item.unit_price || 0),
-    oldPrice: item.old_price ? Number(item.old_price) : (item.compareAtPrice ? Number(item.compareAtPrice) : undefined),
+    oldPrice:
+      item.oldPrice !== undefined && item.oldPrice !== null && item.oldPrice !== ''
+        ? Number(item.oldPrice)
+        : item.old_price
+        ? Number(item.old_price)
+        : item.compareAtPrice
+        ? Number(item.compareAtPrice)
+        : undefined,
     unit: item.unit || item.weight || '250 غرام',
     inStock: item.inStock !== false && item.in_stock !== false && (item.stockCount ?? item.stock_count ?? 1) > 0,
     stockCount: Number(item.stockCount ?? item.stock_count ?? 50),

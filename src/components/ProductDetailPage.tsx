@@ -313,13 +313,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="bg-[#141F1A] p-4 sm:p-5 rounded-2xl border border-[#24372D] flex flex-wrap items-baseline justify-between gap-3">
                 <div>
                   <span className="text-xs text-[#8C7E6D] block mb-0.5">السعر بالدرهم المغربي:</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl sm:text-4xl font-black text-[#FAF5EC] font-['Cairo']">
-                      {product.price}
-                    </span>
-                    <span className="text-base sm:text-xl font-black text-[#F59E0B]">
-                      درهم مغربي DH
-                    </span>
+                  <div className="flex items-baseline gap-2.5 flex-wrap">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl sm:text-4xl font-black text-[#FAF5EC] font-['Cairo']">
+                        {product.price}
+                      </span>
+                      <span className="text-base sm:text-xl font-black text-[#F59E0B]">
+                        درهم مغربي DH
+                      </span>
+                    </div>
+                    {Number(product.oldPrice) > Number(product.price) && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-base sm:text-xl text-[#8E8272] line-through font-mono decoration-[#EF4444]/80">
+                          {product.oldPrice} DH
+                        </span>
+                        <span
+                          className="bg-[#DC2626] text-white text-xs font-black px-2 py-0.5 rounded-full font-mono"
+                          dir="ltr"
+                        >
+                          -{Math.round(((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice)) * 100)}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
