@@ -49,7 +49,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       const sId = item.product.sellerId || 'seller-saeed';
       const store = stores.find((st) => st.id === item.product.storeId || st.sellerId === sId);
       const seller = sellers.find((s) => s.id === sId);
-      const storeName = store?.name || seller?.storeName || seller?.businessName || 'محل عند سعيد (المتجر الرئيسي)';
+      const storeName = store?.name || seller?.storeName || seller?.businessName || 'Natural Health Morocco (المتجر الرئيسي)';
       const storeCity = store?.city || seller?.city || 'مراكش';
 
       if (!groups[sId]) {
@@ -553,7 +553,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                 <div className="space-y-1">
                   <h4 className="font-extrabold text-xl text-[#FAF5EC] font-['Cairo']">
-                    شكراً لطلبكم من عِطارة عند سعيد!
+                    شكراً لطلبكم من عِطارة Natural Health Morocco!
                   </h4>
                   <p className="text-xs text-[#A89C89] max-w-xs mx-auto">
                     تم تسجيل طلبيتك بنجاح برقم: <strong className="text-[#F59E0B] font-mono">#{confirmedOrder?.id || orderNumber}</strong>. سنتصل بك لتأكيد وقت التوصيل لباب بيتك.
