@@ -59,6 +59,9 @@
     },
     "api/track-order.ts": {
       "includeFiles": "firebase-applet-config.json"
+    },
+    "api/seo.ts": {
+      "includeFiles": "{firebase-applet-config.json,dist/index.html}"
     }
   },
   "rewrites": [
@@ -67,8 +70,28 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/api/((?!sitemap|bootstrap|track-order).*)",
+      "source": "/api/((?!sitemap|bootstrap|track-order|seo).*)",
       "destination": "/api"
+    },
+    {
+      "source": "/product/:id",
+      "destination": "/api/seo?type=product&id=:id"
+    },
+    {
+      "source": "/category/:slug",
+      "destination": "/api/seo?type=category&slug=:slug"
+    },
+    {
+      "source": "/products",
+      "destination": "/api/seo?type=page&page=products"
+    },
+    {
+      "source": "/order-tracking",
+      "destination": "/api/seo?type=page&page=order-tracking"
+    },
+    {
+      "source": "/policy",
+      "destination": "/api/seo?type=page&page=policy"
     },
     {
       "source": "/(.*)",

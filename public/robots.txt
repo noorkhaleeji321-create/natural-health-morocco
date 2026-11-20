@@ -12,6 +12,7 @@ Allow: /assets/
 Allow: /images/
 
 # Prevent crawling of private/internal administration & transactional routes
+Allow: /api/bootstrap
 Disallow: /admin
 Disallow: /account
 Disallow: /cart

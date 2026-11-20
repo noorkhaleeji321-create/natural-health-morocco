@@ -177,9 +177,12 @@ function MainAppContent() {
       }
 
       if (targetCategorySlug) {
-        const cat = categories.find((c) => c.slug === targetCategorySlug || c.name === targetCategorySlug);
-        const catName = cat ? cat.name : targetCategorySlug;
-        const catSlug = cat ? cat.slug : targetCategorySlug;
+        const normalizedSlug = targetCategorySlug.trim();
+        const cat = categories.find(
+          (c) => (c.slug || '').trim() === normalizedSlug || (c.name || '').trim() === normalizedSlug
+        );
+        const catName = cat ? cat.name : normalizedSlug;
+        const catSlug = cat ? cat.slug : normalizedSlug;
         setProductsPageCategory(catName);
         setCurrentPage('products');
         setActiveSection('products');

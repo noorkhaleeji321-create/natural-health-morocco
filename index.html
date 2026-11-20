@@ -206,7 +206,7 @@
       (function() {
         var p = location.pathname;
         var h = location.hash;
-        if ((p === '/' || p.indexOf('/product/') === 0 || p.indexOf('/category/') === 0) && h.indexOf('admin') === -1) {
+        if ((p === '/' || p === '/products' || p.indexOf('/product/') === 0 || p.indexOf('/category/') === 0) && h.indexOf('admin') === -1) {
           window.__bootstrapPromise = fetch('/api/bootstrap')
             .then(function(r) { return r.ok ? r.json() : null; })
             .catch(function() { return null; });
