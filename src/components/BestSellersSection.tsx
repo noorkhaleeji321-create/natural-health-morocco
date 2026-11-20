@@ -72,8 +72,9 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
                 product={product}
                 onAddToCart={onAddToCart}
                 onViewDetails={onViewDetails}
-                priority={index < 4}
+                priority={false}
                 eager
+                lowPriority={index >= 4}
               />
             ))}
           </div>

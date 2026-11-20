@@ -3,17 +3,68 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './styles/index.css';
 
+function waitForAppStyles(): Promise<void> {
+  if (typeof document === 'undefined') return Promise.resolve();
+  const pendingLinks = Array.from(
+    document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][media="print"]')
+  ).filter((link) => !link.getAttribute('href')?.includes('fonts.googleapis.com'));
+
+  if (pendingLinks.length === 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let remaining = pendingLinks.length;
+    const done = () => {
+      remaining -= 1;
+      if (remaining <= 0) resolve();
+    };
+    const fallbackTimer = window.setTimeout(() => {
+      pendingLinks.forEach((l) => {
+        if (l.media === 'print') l.media = 'all';
+      });
+      resolve();
+    }, 1500);
+
+    pendingLinks.forEach((link) => {
+      try {
+        if (link.sheet) {
+          link.media = 'all';
+          done();
+          return;
+        }
+      } catch {}
+      link.addEventListener(
+        'load',
+        () => {
+          link.media = 'all';
+          window.clearTimeout(fallbackTimer);
+          done();
+        },
+        { once: true }
+      );
+      link.addEventListener(
+        'error',
+        () => {
+          window.clearTimeout(fallbackTimer);
+          done();
+        },
+        { once: true }
+      );
+    });
+  });
+}
+
 const container = document.getElementById('root');
 if (container) {
-  try {
-    const root = createRoot(container);
-    root.render(
-      <StrictMode>
-        <App />
-      </StrictMode>
-    );
-  } catch (err) {
-    console.error('Fatal initialization error:', err);
+  waitForAppStyles().then(() => {
+    try {
+      const root = createRoot(container);
+      root.render(
+        <StrictMode>
+          <App />
+        </StrictMode>
+      );
+    } catch (err) {
+      console.error('Fatal initialization error:', err);
     container.innerHTML = `
       <div style="min-height: 100vh; background-color: #0C100E; color: #FAF5EC; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Cairo', sans-serif; text-align: center; padding: 24px;">
         <div style="width: 56px; height: 56px; border-radius: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px;">⚠️</div>
@@ -23,7 +74,8 @@ if (container) {
           إعادة تحميل المتجر
         </button>
       </div>
-    `;
-  }
+      `;
+    }
+  });
 }
 

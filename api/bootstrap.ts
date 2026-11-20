@@ -140,7 +140,7 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
       'Cache-Control',
-      hasAuth ? 'no-store' : 'public, s-maxage=15, stale-while-revalidate=60'
+      hasAuth ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=300'
     );
     res.end(
       JSON.stringify({

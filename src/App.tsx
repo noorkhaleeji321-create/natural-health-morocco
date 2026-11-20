@@ -585,7 +585,7 @@ function MainAppContent() {
 
             <LazyBelowFold
               fallback={<div className="min-h-[420px] bg-[#0A0F0D] border-t border-[#1C2822]" aria-hidden="true" />}
-              delayMs={1200}
+              delayMs={4200}
             >
               <NewArrivalsSection
                 products={filteredNewArrivals}
@@ -598,7 +598,7 @@ function MainAppContent() {
 
             <LazyBelowFold
               fallback={<div className="min-h-[600px] bg-[#080C0A]" aria-hidden="true" />}
-              delayMs={4200}
+              delayMs={4800}
             >
               <NaturalWellnessGuideSection
                 onBrowseCategory={(catName) => handleNavigate('products', catName)}
@@ -631,7 +631,7 @@ function MainAppContent() {
 
       <LazyBelowFold
         fallback={<footer className="min-h-[320px] bg-[#070B09]" aria-hidden="true" />}
-        delayMs={4400}
+        delayMs={5000}
       >
         <Footer onNavigate={handleNavigate} />
       </LazyBelowFold>

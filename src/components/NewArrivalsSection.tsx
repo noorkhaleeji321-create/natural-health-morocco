@@ -73,8 +73,9 @@ export const NewArrivalsSection: React.FC<NewArrivalsSectionProps> = ({
                   product={product}
                   onAddToCart={onAddToCart}
                   onViewDetails={onViewDetails}
-                  priority={index < 4}
+                  priority={false}
                   eager
+                  lowPriority={index >= 4}
                 />
               ))}
             </div>

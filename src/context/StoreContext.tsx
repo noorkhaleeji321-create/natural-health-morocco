@@ -655,7 +655,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
               if (deferredSyncTimerRef.current) clearTimeout(deferredSyncTimerRef.current);
               deferredSyncTimerRef.current = setTimeout(() => {
                 void runDirectFirestoreSync();
-              }, 4800);
+              }, 6500);
             }
           } else {
             await runDirectFirestoreSync();
@@ -721,7 +721,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       .map((c) => formatThumbUrl(c.image, 360, 70))
       .filter(Boolean);
 
-    cancelCategoryWarmupRef.current = preloadImagesBatched(allCatThumbs, 8, 60, 350);
+    cancelCategoryWarmupRef.current = preloadImagesBatched(allCatThumbs, 6, 120, 2000);
 
     return () => {
       if (cancelCategoryWarmupRef.current) {
@@ -731,7 +731,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     };
   }, [categories]);
 
-  // Warm all 20 visible Best Sellers & 20 visible New Arrivals thumbnails immediately after Hero LCP
+  // Warm visible Best Sellers & New Arrivals thumbnails cleanly after Hero LCP & Categories settle
   useEffect(() => {
     if (cancelImageWarmupRef.current) {
       cancelImageWarmupRef.current();
@@ -744,7 +744,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       ...products.filter((p) => p.isNew && p.inStock !== false).slice(0, 20).map((p) => formatThumbUrl(p.image, 420, 72)),
     ];
 
-    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedThumbUrls, 8, 60, 600);
+    cancelImageWarmupRef.current = preloadImagesBatched(prioritizedThumbUrls, 6, 120, 2800);
 
     return () => {
       if (cancelImageWarmupRef.current) {

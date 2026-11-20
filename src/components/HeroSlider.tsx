@@ -29,7 +29,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
         });
         preloadImages(nextSources);
       }
-    }, 3500);
+    }, 6500);
     return () => clearTimeout(timer);
   }, [activeSlides]);
 
