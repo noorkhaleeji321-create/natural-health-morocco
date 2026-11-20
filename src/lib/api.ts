@@ -142,6 +142,21 @@ export const api = {
     }
   },
 
+  async reorderProducts(items: { id: string; sortOrder: number }[]): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch('/api/products/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ items }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[API] reorderProducts notice:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
   async deleteProduct(id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {

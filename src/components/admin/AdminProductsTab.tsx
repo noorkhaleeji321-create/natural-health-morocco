@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit, Trash2, Package, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Plus, Search, Edit, Trash2, Package, RefreshCw, AlertCircle, ArrowUp, ArrowDown, ChevronsUp, Check } from 'lucide-react';
 import { Product, Category } from '../../types';
 import { ImageUploadField } from './ImageUploadField';
-import { formatImageUrl, handleImageError } from '../../lib/utils';
+import { formatImageUrl, handleImageError, sortProductsByDisplayOrder } from '../../lib/utils';
 
 interface AdminProductsTabProps {
   products: Product[];
   categories: Category[];
   onAdd: (p: Omit<Product, 'id'>) => Promise<{ success: boolean; product?: Product; error?: string }>;
   onUpdate: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; product?: Product; error?: string }>;
+  onMoveOrder?: (id: string, targetIndex: number) => Promise<{ success: boolean; error?: string }>;
   onDelete: (id: string) => Promise<{ success: boolean; error?: string }>;
   showNotification: (msg: string, type?: 'success' | 'error') => void;
 }
@@ -18,6 +19,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   categories,
   onAdd,
   onUpdate,
+  onMoveOrder,
   onDelete,
   showNotification,
 }) => {
@@ -25,6 +27,8 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [rankInputs, setRankInputs] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [debouncedSearchFilter, setDebouncedSearchFilter] = useState('');
@@ -173,7 +177,50 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
     setProductToDelete(null);
   };
 
-  const filteredProducts = products.filter((p) => {
+  const orderedProducts = useMemo(() => sortProductsByDisplayOrder(products), [products]);
+
+  const masterRankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    orderedProducts.forEach((p, idx) => map.set(p.id, idx + 1));
+    return map;
+  }, [orderedProducts]);
+
+  const handleMove = async (p: Product, targetIndex: number, label?: string) => {
+    if (!onMoveOrder || reorderingId) return;
+    const clamped = Math.max(0, Math.min(orderedProducts.length - 1, targetIndex));
+    setReorderingId(p.id);
+    try {
+      const res = await onMoveOrder(p.id, clamped);
+      if (res.success) {
+        setRankInputs((prev) => {
+          const copy = { ...prev };
+          delete copy[p.id];
+          return copy;
+        });
+        showNotification(
+          label || `تم نقل "${p.name}" إلى الترتيب #${clamped + 1} وحفظه بنجاح!`,
+          'success'
+        );
+      } else {
+        showNotification(res.error || 'تعذر تحديث ترتيب المنتج', 'error');
+      }
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
+  const handleJumpToRank = (p: Product) => {
+    const raw = rankInputs[p.id];
+    const parsed = parseInt(String(raw || '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      showNotification('أدخل رقم ترتيب صحيح يبدأ من 1', 'error');
+      return;
+    }
+    const targetIdx = Math.min(orderedProducts.length - 1, parsed - 1);
+    handleMove(p, targetIdx);
+  };
+
+  const filteredProducts = orderedProducts.filter((p) => {
     const matchSearch =
       p.name.toLowerCase().includes(debouncedSearchFilter.toLowerCase()) ||
       p.description.toLowerCase().includes(debouncedSearchFilter.toLowerCase());
@@ -226,6 +273,17 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           </select>
         </div>
       </div>
+
+      {/* Ordering Guide Note */}
+      {onMoveOrder && (
+        <div className="bg-[#121C16] border border-[#D97706]/30 rounded-2xl px-4 py-2.5 text-[11px] sm:text-xs text-[#E5DCce] flex flex-wrap items-center justify-between gap-2">
+          <span>
+            ✨ <strong className="text-[#F3BA63]">ترتيب ظهور المنتجات للزبائن:</strong> أول{' '}
+            <strong className="text-[#10B981] font-mono">20</strong> منتجاً (#1 إلى #20) تظهر أولاً في المتجر. يمكنك الضغط على{' '}
+            <strong className="text-[#F3BA63]">للأول</strong> أو الأسهم أو كتابة رقم الترتيب مباشرة.
+          </span>
+        </div>
+      )}
 
       {/* Product Edit / Create Modal */}
       {isFormOpen && (
@@ -496,77 +554,162 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
             لا توجد منتجات مطابقة لعملية البحث
           </div>
         ) : (
-          filteredProducts.map((p) => (
-            <div
-              key={p.id}
-              className="bg-[#101713] border border-[#213027] rounded-2xl p-3.5 space-y-3 shadow-md"
-            >
-              <div className="flex items-start gap-3">
-                {formatImageUrl(p.image) ? (
-                  <img
-                    src={formatImageUrl(p.image)}
-                    alt={p.name}
-                    className="w-16 h-16 rounded-xl object-cover border border-[#26372D] shrink-0 bg-[#0C120F]"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-[#0C120F] border border-[#26372D] shrink-0 flex items-center justify-center text-[#8A9B90]">
-                    <Package className="w-6 h-6 text-[#D97706]/70" />
+          filteredProducts.map((p) => {
+            const rank = masterRankMap.get(p.id) || 1;
+            const isTop20 = rank <= 20;
+            const isFirst = rank === 1;
+            const isLast = rank === orderedProducts.length;
+            const isBusy = reorderingId === p.id;
+            return (
+              <div
+                key={p.id}
+                className="bg-[#101713] border border-[#213027] rounded-2xl p-3.5 space-y-3 shadow-md"
+              >
+                <div className="flex items-start gap-3">
+                  {formatImageUrl(p.image) ? (
+                    <img
+                      src={formatImageUrl(p.image)}
+                      alt={p.name}
+                      className="w-16 h-16 rounded-xl object-cover border border-[#26372D] shrink-0 bg-[#0C120F]"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-[#0C120F] border border-[#26372D] shrink-0 flex items-center justify-center text-[#8A9B90]">
+                      <Package className="w-6 h-6 text-[#D97706]/70" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md border shrink-0 ${
+                            isTop20
+                              ? 'bg-[#D97706]/20 text-[#F3BA63] border-[#D97706]/40'
+                              : 'bg-[#16221B] text-[#8A9B90] border-[#26372D]'
+                          }`}
+                        >
+                          #{rank}
+                        </span>
+                        <span className="text-[10px] text-[#D97706] font-bold truncate">{p.category}</span>
+                      </div>
+                      <span
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          p.inStock
+                            ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                            : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
+                        }`}
+                      >
+                        {p.inStock ? 'متوفر' : 'نفذ'}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-xs text-white font-['Cairo'] line-clamp-1 mt-0.5">
+                      {p.name}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-mono font-black text-xs text-[#F59E0B]">{p.price} DH</span>
+                      {p.oldPrice && (
+                        <span className="line-through text-[10px] text-[#6B7870] font-mono">{p.oldPrice} DH</span>
+                      )}
+                      <span className="text-[10px] text-[#8A9B90]">/ {p.unit}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {onMoveOrder && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1C2821]">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={isFirst || isBusy}
+                        onClick={() => handleMove(p, 0, `تم وضع "${p.name}" في أول القائمة (#1)!`)}
+                        className="px-2.5 py-1.5 rounded-xl bg-[#D97706]/15 hover:bg-[#D97706] text-[#F3BA63] hover:text-white border border-[#D97706]/40 font-bold text-[11px] flex items-center gap-1 transition-colors disabled:opacity-35 cursor-pointer"
+                        title="إرسال إلى أول القائمة (#1)"
+                      >
+                        <ChevronsUp className="w-3.5 h-3.5" />
+                        <span>للأول</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isFirst || isBusy}
+                        onClick={() => handleMove(p, rank - 2)}
+                        className="p-1.5 rounded-xl bg-[#17241D] hover:bg-[#203127] text-white border border-[#2E4135] disabled:opacity-35 cursor-pointer"
+                        aria-label="رفع درجة للأعلى"
+                        title="رفع للأعلى"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isLast || isBusy}
+                        onClick={() => handleMove(p, rank)}
+                        className="p-1.5 rounded-xl bg-[#17241D] hover:bg-[#203127] text-white border border-[#2E4135] disabled:opacity-35 cursor-pointer"
+                        aria-label="إنزال درجة للأسفل"
+                        title="إنزال للأسفل"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-[#8A9B90]">الرقم:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={orderedProducts.length}
+                        value={rankInputs[p.id] ?? String(rank)}
+                        onChange={(e) =>
+                          setRankInputs((prev) => ({ ...prev, [p.id]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleJumpToRank(p);
+                          }
+                        }}
+                        className="w-12 bg-[#151F19] border border-[#2B3C31] rounded-lg px-1.5 py-1 text-center text-xs font-mono text-white focus:outline-hidden focus:border-[#D97706]"
+                        aria-label={`رقم ترتيب ${p.name}`}
+                      />
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleJumpToRank(p)}
+                        className="p-1.5 rounded-lg bg-[#1E3328] hover:bg-[#10B981] text-[#34D399] hover:text-white border border-[#10B981]/30 cursor-pointer disabled:opacity-40"
+                        title="تطبيق رقم الترتيب"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] text-[#D97706] font-bold truncate">{p.category}</span>
-                    <span
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                        p.inStock
-                          ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                          : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
-                      }`}
-                    >
-                      {p.inStock ? 'متوفر' : 'نفذ'}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-xs text-white font-['Cairo'] line-clamp-1 mt-0.5">
-                    {p.name}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono font-black text-xs text-[#F59E0B]">{p.price} DH</span>
-                    {p.oldPrice && (
-                      <span className="line-through text-[10px] text-[#6B7870] font-mono">{p.oldPrice} DH</span>
-                    )}
-                    <span className="text-[10px] text-[#8A9B90]">/ {p.unit}</span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-[#1C2821] text-xs">
-                <span className="text-[#8A9B90] text-[11px]">
-                  المخزون: <strong className="text-white font-mono">{p.stockCount ?? 50}</strong>
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openEditForm(p)}
-                    className="px-3 py-1.5 rounded-xl bg-[#17241D] hover:bg-[#203127] text-[#F3BA63] font-bold text-xs flex items-center gap-1.5 transition-colors border border-[#2E4135] active:scale-95"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>تعديل</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setProductToDelete(p)}
-                    className="px-3 py-1.5 rounded-xl bg-[#2A1515] hover:bg-[#3B1C1C] text-[#EF4444] font-bold text-xs flex items-center gap-1.5 transition-colors border border-[#EF4444]/30 active:scale-95"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>مسح</span>
-                  </button>
+                <div className="flex items-center justify-between pt-2 border-t border-[#1C2821] text-xs">
+                  <span className="text-[#8A9B90] text-[11px]">
+                    المخزون: <strong className="text-white font-mono">{p.stockCount ?? 50}</strong>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditForm(p)}
+                      className="px-3 py-1.5 rounded-xl bg-[#17241D] hover:bg-[#203127] text-[#F3BA63] font-bold text-xs flex items-center gap-1.5 transition-colors border border-[#2E4135] active:scale-95"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>تعديل</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProductToDelete(p)}
+                      className="px-3 py-1.5 rounded-xl bg-[#2A1515] hover:bg-[#3B1C1C] text-[#EF4444] font-bold text-xs flex items-center gap-1.5 transition-colors border border-[#EF4444]/30 active:scale-95"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>مسح</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -576,6 +719,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           <table className="w-full text-right text-xs sm:text-sm">
             <thead>
               <tr className="text-[#8A9B90] bg-[#141D17] border-b border-[#213027]">
+                {onMoveOrder && <th className="p-4 font-bold text-center">الترتيب</th>}
                 <th className="p-4 font-bold">المنتج</th>
                 <th className="p-4 font-bold">التصنيف</th>
                 <th className="p-4 font-bold">السعر</th>
@@ -586,83 +730,171 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#18231C]">
-              {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-[#141F18] transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      {formatImageUrl(p.image) ? (
-                        <img
-                          src={formatImageUrl(p.image)}
-                          alt={p.name}
-                          className="w-12 h-12 rounded-xl object-cover border border-[#26372D]"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-[#0C120F] border border-[#26372D] flex items-center justify-center text-[#8A9B90] shrink-0">
-                          <Package className="w-5 h-5 text-[#D97706]/70" />
+              {filteredProducts.map((p) => {
+                const rank = masterRankMap.get(p.id) || 1;
+                const isTop20 = rank <= 20;
+                const isFirst = rank === 1;
+                const isLast = rank === orderedProducts.length;
+                const isBusy = reorderingId === p.id;
+                return (
+                  <tr key={p.id} className="hover:bg-[#141F18] transition-colors">
+                    {onMoveOrder && (
+                      <td className="p-3 align-middle">
+                        <div className="flex flex-col items-center gap-1.5 min-w-[130px]">
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={`text-xs font-mono font-black px-2 py-0.5 rounded-md border ${
+                                isTop20
+                                  ? 'bg-[#D97706]/20 text-[#F3BA63] border-[#D97706]/40'
+                                  : 'bg-[#16221B] text-[#8A9B90] border-[#26372D]'
+                              }`}
+                              title={isTop20 ? 'يظهر ضمن أول 20 منتجاً في الصفحة الرئيسية' : 'ترتيب العرض'}
+                            >
+                              #{rank}
+                            </span>
+                            {isTop20 && (
+                              <span className="text-[9px] font-bold text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 px-1.5 py-0.5 rounded-full">
+                                أول 20
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={isFirst || isBusy}
+                              onClick={() => handleMove(p, 0, `تم وضع "${p.name}" في أول القائمة (#1)!`)}
+                              className="px-2 py-1 rounded-lg bg-[#D97706]/15 hover:bg-[#D97706] text-[#F3BA63] hover:text-white border border-[#D97706]/40 text-[10px] font-bold flex items-center gap-0.5 transition-colors disabled:opacity-35 cursor-pointer"
+                              title="وضع في أول القائمة (#1)"
+                            >
+                              <ChevronsUp className="w-3 h-3" />
+                              <span>للأول</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isFirst || isBusy}
+                              onClick={() => handleMove(p, rank - 2)}
+                              className="p-1 rounded-lg bg-[#17241D] hover:bg-[#203127] text-white border border-[#2E4135] disabled:opacity-35 cursor-pointer"
+                              title="رفع للأعلى"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isLast || isBusy}
+                              onClick={() => handleMove(p, rank)}
+                              className="p-1 rounded-lg bg-[#17241D] hover:bg-[#203127] text-white border border-[#2E4135] disabled:opacity-35 cursor-pointer"
+                              title="إنزال للأسفل"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              max={orderedProducts.length}
+                              value={rankInputs[p.id] ?? String(rank)}
+                              onChange={(e) =>
+                                setRankInputs((prev) => ({ ...prev, [p.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleJumpToRank(p);
+                                }
+                              }}
+                              className="w-12 bg-[#151F19] border border-[#2B3C31] rounded-md px-1 py-0.5 text-center text-[11px] font-mono text-white focus:outline-hidden focus:border-[#D97706]"
+                              aria-label={`رقم ترتيب ${p.name}`}
+                            />
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleJumpToRank(p)}
+                              className="p-1 rounded-md bg-[#1E3328] hover:bg-[#10B981] text-[#34D399] hover:text-white border border-[#10B981]/30 cursor-pointer disabled:opacity-40"
+                              title="نقل لهذا الرقم"
+                            >
+                              <Check className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
-                      )}
-                      <div>
-                        <h4 className="font-bold text-white font-['Cairo']">{p.name}</h4>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {p.isBestSeller && (
-                            <span className="text-[10px] bg-[#D97706]/20 text-[#F59E0B] px-1.5 py-0.2 rounded-sm font-bold">
-                              الأكثر طلباً
-                            </span>
-                          )}
-                          {p.isNew && (
-                            <span className="text-[10px] bg-[#10B981]/20 text-[#10B981] px-1.5 py-0.2 rounded-sm font-bold">
-                              جديد
-                            </span>
-                          )}
+                      </td>
+                    )}
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        {formatImageUrl(p.image) ? (
+                          <img
+                            src={formatImageUrl(p.image)}
+                            alt={p.name}
+                            className="w-12 h-12 rounded-xl object-cover border border-[#26372D]"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-[#0C120F] border border-[#26372D] flex items-center justify-center text-[#8A9B90] shrink-0">
+                            <Package className="w-5 h-5 text-[#D97706]/70" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-white font-['Cairo']">{p.name}</h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {p.isBestSeller && (
+                              <span className="text-[10px] bg-[#D97706]/20 text-[#F59E0B] px-1.5 py-0.2 rounded-sm font-bold">
+                                الأكثر طلباً
+                              </span>
+                            )}
+                            {p.isNew && (
+                              <span className="text-[10px] bg-[#10B981]/20 text-[#10B981] px-1.5 py-0.2 rounded-sm font-bold">
+                                جديد
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-[#C4B7A4]">{p.category}</td>
-                  <td className="p-4 font-mono font-bold text-[#F59E0B]">
-                    {p.price} DH
-                    {p.oldPrice && (
-                      <span className="line-through text-xs text-[#6B7870] mr-2">{p.oldPrice} DH</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-[#A89C89]">{p.unit}</td>
-                  <td className="p-4 font-mono text-white">{p.stockCount ?? 50}</td>
-                  <td className="p-4">
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                        p.inStock
-                          ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                          : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
-                      }`}
-                    >
-                      {p.inStock ? 'متوفر' : 'غير متوفر'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openEditForm(p)}
-                        className="p-2 rounded-lg bg-[#17241D] hover:bg-[#203127] text-[#F3BA63] transition-colors cursor-pointer"
-                        title="تعديل المنتج"
+                    </td>
+                    <td className="p-4 text-[#C4B7A4]">{p.category}</td>
+                    <td className="p-4 font-mono font-bold text-[#F59E0B]">
+                      {p.price} DH
+                      {p.oldPrice && (
+                        <span className="line-through text-xs text-[#6B7870] mr-2">{p.oldPrice} DH</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-[#A89C89]">{p.unit}</td>
+                    <td className="p-4 font-mono text-white">{p.stockCount ?? 50}</td>
+                    <td className="p-4">
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                          p.inStock
+                            ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
+                            : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30'
+                        }`}
                       >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProductToDelete(p)}
-                        className="p-2 rounded-lg bg-[#2A1515] hover:bg-[#3B1C1C] text-[#EF4444] transition-colors cursor-pointer"
-                        title="مسح المنتج"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {p.inStock ? 'متوفر' : 'غير متوفر'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditForm(p)}
+                          className="p-2 rounded-lg bg-[#17241D] hover:bg-[#203127] text-[#F3BA63] transition-colors cursor-pointer"
+                          title="تعديل المنتج"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProductToDelete(p)}
+                          className="p-2 rounded-lg bg-[#2A1515] hover:bg-[#3B1C1C] text-[#EF4444] transition-colors cursor-pointer"
+                          title="مسح المنتج"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

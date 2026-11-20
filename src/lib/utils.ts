@@ -190,3 +190,34 @@ export function preloadImagesBatched(
     }
   };
 }
+
+/**
+ * Sorts catalog products according to admin-configured display order (sortOrder ascending),
+ * falling back to newest createdAt first so older products never bury newer items.
+ */
+export function sortProductsByDisplayOrder<
+  T extends { sortOrder?: number; createdAt?: string; id?: string }
+>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+    const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+    if (aHas && bHas) {
+      if (a.sortOrder! !== b.sortOrder!) {
+        return a.sortOrder! - b.sortOrder!;
+      }
+    } else if (aHas && !bHas) {
+      return -1;
+    } else if (!aHas && bHas) {
+      return 1;
+    }
+
+    const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+    if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+      return bTime - aTime;
+    }
+
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
+

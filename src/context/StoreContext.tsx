@@ -24,7 +24,7 @@ import {
   defaultStores,
 } from '../data/storeData';
 import { safeGetItem, safeRemoveItem } from '../utils/storage';
-import { formatThumbUrl, preloadImagesBatched } from '../lib/utils';
+import { formatThumbUrl, preloadImagesBatched, sortProductsByDisplayOrder } from '../lib/utils';
 import { api } from '../lib/api';
 import { 
   fsGetDocs, 
@@ -128,6 +128,7 @@ interface StoreContextType {
   products: Product[];
   addProduct: (product: Omit<Product, 'id'>) => Promise<{ success: boolean; product?: Product; error?: string }>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; product?: Product; error?: string }>;
+  moveProductOrder: (id: string, targetIndex: number) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
 
   // Categories
@@ -296,6 +297,12 @@ export const mapServerProduct = (item: any, idx: number): Product => {
     storeSlug: item.storeSlug || item.store_slug || 'natural-morocco',
     status: 'approved' as ProductStatus,
     createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+    sortOrder:
+      typeof item.sortOrder === 'number'
+        ? item.sortOrder
+        : typeof item.sort_order === 'number'
+        ? item.sort_order
+        : undefined,
   };
 };
 
@@ -492,7 +499,8 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           startTransition(() => {
             if (!firestoreLoadedProducts) {
               if (Array.isArray(data.products) && data.products.length > 0) {
-                setProducts((prev) => (isSameContent(prev, data.products) ? prev : data.products));
+                const sorted = sortProductsByDisplayOrder(data.products as Product[]);
+                setProducts((prev) => (isSameContent(prev, sorted) ? prev : sorted));
               }
               if (data.storeSettings) {
                 setStoreSettings((prev) => {
@@ -602,7 +610,8 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
               startTransition(() => {
                 setIsFirestoreActive(true);
                 if (Array.isArray(firestoreProducts)) {
-                  setProducts((prev) => (isSameContent(prev, firestoreProducts) ? prev : firestoreProducts));
+                  const sorted = sortProductsByDisplayOrder(firestoreProducts as Product[]);
+                  setProducts((prev) => (isSameContent(prev, sorted) ? prev : sorted));
                 }
                 if (Array.isArray(firestoreCategories)) {
                   setCategories((prev) => (isSameContent(prev, firestoreCategories) ? prev : firestoreCategories));
@@ -789,14 +798,20 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
   // Product Actions
   const addProduct = async (productData: Omit<Product, 'id'>): Promise<{ success: boolean; product?: Product; error?: string }> => {
     const newId = `prod-${Date.now()}`;
+    const existingSortOrders = products
+      .map((p) => p.sortOrder)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    const topSortOrder = existingSortOrders.length > 0 ? Math.min(...existingSortOrders) - 1 : 0;
+
     const newProduct: Product = {
       ...productData,
       id: newId,
       createdAt: new Date().toISOString(),
+      sortOrder: typeof productData.sortOrder === 'number' ? productData.sortOrder : topSortOrder,
     };
     
     // 1. Update local state immediately for fast UI responsiveness
-    setProducts((prev) => [newProduct, ...prev]);
+    setProducts((prev) => sortProductsByDisplayOrder([newProduct, ...prev]));
 
     setCategories((prev) =>
       prev.map((c) =>
@@ -855,6 +870,69 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
 
     return { success: true, product: apiRes.data || productToSave };
+  };
+
+  const moveProductOrder = async (
+    id: string,
+    targetIndex: number
+  ): Promise<{ success: boolean; error?: string }> => {
+    const ordered = sortProductsByDisplayOrder(products);
+    const fromIndex = ordered.findIndex((p) => p.id === id);
+    if (fromIndex === -1) {
+      return { success: false, error: 'المنتج غير موجود في القائمة' };
+    }
+    const clampedTarget = Math.max(0, Math.min(ordered.length - 1, Math.floor(targetIndex)));
+    if (fromIndex === clampedTarget) {
+      return { success: true };
+    }
+
+    const reordered = [...ordered];
+    const [movedItem] = reordered.splice(fromIndex, 1);
+    reordered.splice(clampedTarget, 0, movedItem);
+
+    const nowIso = new Date().toISOString();
+    const changedItems: Product[] = [];
+    const nextProducts = reordered.map((p, idx) => {
+      if (p.sortOrder !== idx) {
+        const updated = { ...p, sortOrder: idx, updatedAt: nowIso };
+        changedItems.push(updated);
+        return updated;
+      }
+      return p;
+    });
+
+    setProducts(nextProducts);
+
+    if (isFirebaseConfigured() && changedItems.length > 0) {
+      const writeRes = await syncFirestoreWrite(
+        OperationType.UPDATE,
+        `products/${id}`,
+        () =>
+          Promise.all(
+            changedItems.map((p) =>
+              fsSetDoc(
+                'products',
+                p.id,
+                cleanForFirestore({ sortOrder: p.sortOrder, updatedAt: nowIso }),
+                true
+              )
+            )
+          )
+      );
+      if (!writeRes.success) {
+        return { success: false, error: writeRes.error || 'تعذر حفظ الترتيب في Firebase' };
+      }
+    }
+
+    try {
+      await api.reorderProducts(
+        changedItems.map((p) => ({ id: p.id, sortOrder: p.sortOrder! }))
+      );
+    } catch (err) {
+      console.warn('[StoreContext] Local API reorder notice:', err);
+    }
+
+    return { success: true };
   };
 
   const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -1661,6 +1739,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       products,
       addProduct,
       updateProduct,
+      moveProductOrder,
       deleteProduct,
       categories,
       addCategory,

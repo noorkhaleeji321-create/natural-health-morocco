@@ -46,6 +46,7 @@ export interface Product {
   stockQuantity?: number;
   createdAt?: string;
   updatedAt?: string;
+  sortOrder?: number;
   benefits?: string[];
   usage?: string;
   shortDescription?: string;

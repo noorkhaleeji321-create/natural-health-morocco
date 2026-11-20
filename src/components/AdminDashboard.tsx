@@ -47,6 +47,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     products,
     addProduct,
     updateProduct,
+    moveProductOrder,
     deleteProduct,
     categories,
     addCategory,
@@ -280,6 +281,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             categories={categories}
             onAdd={addProduct}
             onUpdate={updateProduct}
+            onMoveOrder={moveProductOrder}
             onDelete={deleteProduct}
             showNotification={showNotification}
           />

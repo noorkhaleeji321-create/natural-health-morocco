@@ -62,7 +62,24 @@ export default async function handler(req: any, res: any) {
 
     const products = prodSnap.docs
       .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
-      .filter((p) => !p.status || p.status === 'approved');
+      .filter((p) => !p.status || p.status === 'approved')
+      .sort((a, b) => {
+        const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+        const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+        if (aHas && bHas) {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        } else if (aHas && !bHas) {
+          return -1;
+        } else if (!aHas && bHas) {
+          return 1;
+        }
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+        if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      });
 
     const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Record<string, any>));
 
@@ -123,7 +140,7 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
       'Cache-Control',
-      hasAuth ? 'no-store' : 'public, s-maxage=30, stale-while-revalidate=120'
+      hasAuth ? 'no-store' : 'public, s-maxage=15, stale-while-revalidate=60'
     );
     res.end(
       JSON.stringify({

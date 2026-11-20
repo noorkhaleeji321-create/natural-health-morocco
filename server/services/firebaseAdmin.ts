@@ -70,7 +70,25 @@ export async function getLiveFirestoreStorefrontFallback() {
       getDocs(collection(db, 'settings')),
     ]);
 
-    const products = prodSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    const products = prodSnap.docs
+      .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
+      .sort((a, b) => {
+        const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+        const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+        if (aHas && bHas) {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        } else if (aHas && !bHas) {
+          return -1;
+        } else if (!aHas && bHas) {
+          return 1;
+        }
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+        if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      });
     const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
     const settingsDoc = settingsSnap.docs.find((d) => d.id === 'main');
     const bankDoc = settingsSnap.docs.find((d) => d.id === 'bank');

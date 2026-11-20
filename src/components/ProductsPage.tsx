@@ -15,7 +15,7 @@ import { ProductCard } from './ProductCard';
 import { ProductCardSkeleton } from './ProductCardSkeleton';
 import { useStore } from '../context/StoreContext';
 import { updateCategorySeo, updatePageSeo } from '../utils/seo';
-import { preloadImages } from '../lib/utils';
+import { preloadImages, sortProductsByDisplayOrder } from '../lib/utils';
 
 interface ProductsPageProps {
   products: Product[];
@@ -24,7 +24,7 @@ interface ProductsPageProps {
   initialCategory?: string | null;
 }
 
-type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'rating';
+type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'rating';
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({
   products,
@@ -35,7 +35,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const { categories, isLoadingProducts } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory);
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortBy, setSortBy] = useState<SortOption>('featured');
   const [visibleCount, setVisibleCount] = useState<number>(20);
 
   // Reset pagination to first 20 products whenever category, search, or sorting changes
@@ -67,8 +67,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       );
     }
 
-    // 3. Sorting (الأحدث، السعر من الأقل للأعلى، السعر من الأعلى للأقل)
+    // 3. Sorting (الترتيب المعتمد من الإدارة، الأحدث، السعر، التقييم)
     switch (sortBy) {
+      case 'featured':
+        result = sortProductsByDisplayOrder(result);
+        break;
+
       case 'newest':
         result.sort((a, b) => {
           if (a.createdAt && b.createdAt) {
@@ -120,10 +124,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedCategory(null);
-    setSortBy('newest');
+    setSortBy('featured');
   };
 
-  const isFilteringActive = searchQuery.trim() !== '' || selectedCategory !== null || sortBy !== 'newest';
+  const isFilteringActive = searchQuery.trim() !== '' || selectedCategory !== null || sortBy !== 'featured';
 
   return (
     <div className="min-h-screen bg-[#080C0A] text-[#FAF5EC] py-6 sm:py-10">
@@ -186,6 +190,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="bg-transparent text-xs sm:text-sm font-bold text-[#FAF5EC] focus:outline-hidden cursor-pointer"
               >
+                <option value="featured" className="bg-[#121A16] text-[#FAF5EC]">
+                  الترتيب المعتمد (الأبرز)
+                </option>
                 <option value="newest" className="bg-[#121A16] text-[#FAF5EC]">
                   الأحدث أولاً
                 </option>

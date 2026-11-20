@@ -211,6 +211,26 @@ router.get('/bootstrap', async (req, res) => {
       }
     }
 
+    if (Array.isArray(products)) {
+      products = [...products].sort((a, b) => {
+        const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+        const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+        if (aHas && bHas) {
+          if (a.sortOrder! !== b.sortOrder!) return a.sortOrder! - b.sortOrder!;
+        } else if (aHas && !bHas) {
+          return -1;
+        } else if (!aHas && bHas) {
+          return 1;
+        }
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+        if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      });
+    }
+
     // Sanitize Store Settings: Strip adminPin and internal keys for public visitors
     const publicStoreSettings = storeSettings ? {
       storeName: storeSettings.storeName,
@@ -295,10 +315,48 @@ router.get('/bootstrap', async (req, res) => {
 // ==========================================
 router.get('/products', (_req, res) => {
   try {
-    const products = dbService.getProducts();
+    const products = [...dbService.getProducts()].sort((a, b) => {
+      const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+      const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+      if (aHas && bHas) {
+        if (a.sortOrder! !== b.sortOrder!) return a.sortOrder! - b.sortOrder!;
+      } else if (aHas && !bHas) {
+        return -1;
+      } else if (!aHas && bHas) {
+        return 1;
+      }
+      const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+      if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+        return bTime - aTime;
+      }
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
     res.json(products);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/products/reorder', requireAdminAuth, (req, res) => {
+  try {
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    const orderMap = new Map<string, number>();
+    items.forEach((it: any) => {
+      if (it && it.id && typeof it.sortOrder === 'number') {
+        orderMap.set(String(it.id), it.sortOrder);
+      }
+    });
+    const all = dbService.getProducts();
+    const nowIso = new Date().toISOString();
+    all.forEach((p) => {
+      if (orderMap.has(p.id)) {
+        dbService.saveProduct({ ...p, sortOrder: orderMap.get(p.id), updatedAt: nowIso });
+      }
+    });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
