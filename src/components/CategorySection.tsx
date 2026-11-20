@@ -76,7 +76,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {/* Categories Single Moving Row */}
         <div className="relative w-full overflow-hidden py-2 mx-0 mb-0" dir="ltr">
           {/* Continuous Moving Track from Left to Right - Always Filled & Visible */}
-          <div className="animate-scroll-ltr flex gap-3 sm:gap-5 py-2 w-max">
+          <div className="animate-scroll-ltr flex gap-3 sm:gap-5 w-max">
             {[...categories, ...categories].map((cat, index) => {
               const isSelected = selectedCategory === cat.slug;
               const formattedImg = formatThumbUrl(cat.image, 360, 70);
@@ -92,14 +92,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                       onSelectCategory(isSelected ? null : cat.slug);
                     }
                   }}
-                  className={`w-52 sm:w-64 md:w-72 shrink-0 group relative rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border ${
+                  className={`w-52 sm:w-64 md:w-72 h-[238px] sm:h-[288px] shrink-0 group relative rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border ${
                     isSelected
                       ? 'ring-2 sm:ring-3 ring-[#D97706] border-[#D97706] shadow-2xl scale-[1.02]'
                       : 'border-[#223128] hover:border-[#D97706]/70 shadow-lg hover:-translate-y-1'
                   } bg-[#121A16] flex flex-col`}
                 >
                   {/* Image Container */}
-                  <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#121A16]">
+                  <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-[#121A16] shrink-0">
                     {formattedImg ? (
                       <CategoryCardImage
                         src={formattedImg}

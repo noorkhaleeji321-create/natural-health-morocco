@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { Navbar } from './components/Navbar';
 import { HeroSlider } from './components/HeroSlider';
 import { TrustHighlights } from './components/TrustHighlights';
@@ -98,8 +99,19 @@ type PageType =
 function MainAppContent() {
   const { products, categories, heroSlides, isAdminAuthenticated, storeSettings, isLoadingProducts } = useStore();
 
-  // Navigation & View state
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  // Navigation & View state (initialized synchronously to prevent hero-slot flash on direct deep links)
+  const [currentPage, setCurrentPage] = useState<PageType>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const pathname = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('category') || pathname.startsWith('/category/')) return 'products';
+    if (pathname === '/admin' || hash === '#admin') return 'admin';
+    if (pathname === '/cart' || hash === '#cart') return 'cart';
+    if (pathname === '/order-tracking' || hash === '#order-tracking') return 'order-tracking';
+    if (pathname === '/products' || hash === '#products') return 'products';
+    return 'home';
+  });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productsPageCategory, setProductsPageCategory] = useState<string | null>(null);
 
@@ -230,6 +242,11 @@ function MainAppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('home');
+
+  // Remove static navbar shell synchronously on first commit so there is zero height/visual flicker
+  useLayoutEffect(() => {
+    document.getElementById('initial-nav-shell')?.remove();
+  }, []);
 
   // Scroll to top only on actual page transitions (skip initial mount to avoid forced reflow)
   const prevPageRef = React.useRef<PageType>(currentPage);
@@ -407,18 +424,44 @@ function MainAppContent() {
     );
   }, [selectedProduct, products]);
 
+  const isPendingProductDeepLink =
+    typeof window !== 'undefined' &&
+    currentPage === 'home' &&
+    (window.location.pathname.toLowerCase().startsWith('/product/') ||
+      new URLSearchParams(window.location.search).has('product') ||
+      new URLSearchParams(window.location.search).has('id'));
+
+  const shouldShowHero =
+    currentPage === 'home' &&
+    !isPendingProductDeepLink &&
+    !searchQuery.trim() &&
+    storeSettings?.showHeroSlider !== false;
+
+  useLayoutEffect(() => {
+    const heroSlot = document.getElementById('hero-slot');
+    if (heroSlot) {
+      heroSlot.style.display = shouldShowHero ? '' : 'none';
+    }
+  }, [shouldShowHero]);
+
+  const navbarMount =
+    typeof document !== 'undefined' ? document.getElementById('navbar-portal') : null;
+
+  const navbarNode = (
+    <Navbar
+      cartCount={cartCount}
+      onOpenCart={() => setIsCartOpen(true)}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      activeSection={activeSection}
+      currentPage={currentPage}
+      onNavigate={handleNavigate}
+    />
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#080C0A] text-[#F3EFE6] font-['Tajawal',sans-serif] selection:bg-[#D97706] selection:text-white">
-      {/* Main Navigation */}
-      <Navbar
-        cartCount={cartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        activeSection={activeSection}
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-      />
+    <div className="flex-1 flex flex-col bg-[#080C0A] text-[#F3EFE6] font-['Tajawal',sans-serif] selection:bg-[#D97706] selection:text-white">
+      {navbarMount ? createPortal(navbarNode, navbarMount) : navbarNode}
 
       <main className="flex-1">
         {sessionAlert && (

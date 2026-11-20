@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#0F1512] border-b border-[#212E27] shadow-lg">
       {/* Top Banner Notice - Moving Single-Line Ticker (Left to Right) */}
-      <div className="bg-[#070A09] text-[#E5DCce] text-xs sm:text-sm py-2 px-2 border-b border-[#1A2620] overflow-hidden select-none">
+      <div className="bg-[#070A09] text-[#E5DCce] text-xs sm:text-sm h-[34px] sm:h-[38px] px-2 border-b border-[#1A2620] overflow-hidden select-none flex items-center">
         <div className="flex items-center w-full overflow-hidden" dir="ltr">
           <div className="animate-marquee-right flex items-center gap-8 text-[#E2D7C3] font-medium whitespace-nowrap" dir="rtl">
             {/* Ticker Content Segment 1 */}
@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Main Navbar with authentic banner background */}
       <div 
-        className="relative bg-cover bg-center border-b border-[#212E27] overflow-hidden shadow-inner"
+        className="relative bg-cover bg-center overflow-hidden shadow-inner"
         style={{ backgroundImage: `url(${NAVBAR_BANNER_BG})` }}
       >
         {/* Refined gradient overlay for stunning background depth and maximum text legibility */}
@@ -276,7 +276,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Search Bar - Mobile View */}
-        <div className="lg:hidden pb-2.5">
+        <div className="lg:hidden h-[48px] pb-2.5 box-border">
           <div className="relative w-full">
             <input
               id="mobile-search-input"
@@ -285,7 +285,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="ابحث عن عسل، زعفران، أركان، توابل..."
-              className="w-full bg-[#16201B] text-[#FAF5EC] pl-9 pr-9 py-2 rounded-full border border-[#2B3C32] focus:outline-hidden focus:border-[#D97706] text-xs sm:text-sm placeholder:text-[#7A8C82]"
+              className="w-full h-[38px] bg-[#16201B] text-[#FAF5EC] pl-9 pr-9 rounded-full border border-[#2B3C32] focus:outline-hidden focus:border-[#D97706] text-xs sm:text-sm placeholder:text-[#7A8C82]"
             />
             <Search className="w-4 h-4 text-[#8C9E94] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             {searchQuery && (
@@ -301,7 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center justify-center gap-1 xl:gap-2 border-t border-[#1F2C25] py-2.5 overflow-x-auto no-scrollbar">
+        <nav className="hidden lg:flex items-center justify-center gap-1 xl:gap-2 border-t border-[#1F2C25] h-[53px] overflow-x-auto no-scrollbar">
           {navLinks.map((link) => {
             const isCurrent =
               (link.id === 'home' && currentPage === 'home' && (!activeSection || activeSection === 'home')) ||

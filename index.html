@@ -213,17 +213,156 @@
         }
       })();
     </script>
+    <style>
+      #app-shell{min-height:100vh;display:flex;flex-direction:column;background:#080C0A;color:#F3EFE6;font-family:'Tajawal',system-ui,-apple-system,sans-serif}
+      #navbar-slot{position:sticky;top:0;z-index:40}
+      #initial-nav-shell{background:#0F1512;border-bottom:1px solid #212E27;box-shadow:0 10px 15px -3px rgba(0,0,0,.3)}
+      #initial-nav-shell .ins-ticker{background:#070A09;height:34px;border-bottom:1px solid #1A2620;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:16px;color:#E2D7C3;overflow:hidden;white-space:nowrap;padding:0 8px}
+      #initial-nav-shell .ins-wrap{max-width:80rem;margin:0 auto;padding:0 12px}
+      #initial-nav-shell .ins-bar{height:64px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+      #initial-nav-shell .ins-msearch{height:48px;padding-bottom:10px;box-sizing:border-box}
+      #initial-nav-shell .ins-dnav{display:none;height:53px;border-top:1px solid #1F2C25}
+      .ihs-hero{position:relative;width:100%;height:220px;background:#0A0E0C;overflow:hidden;color:#fff;user-select:none;border-bottom:1px solid #1C2822}
+      #initial-below-hero-shell{flex:1;background:#080C0A}
+      #initial-below-hero-shell .ihs-trust{background:#080C0A;border-top:1px solid #1C2822;border-bottom:1px solid #1C2822;padding:16px 12px}
+      #initial-below-hero-shell .ihs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:80rem;margin:0 auto}
+      #initial-below-hero-shell .ihs-tcard{display:flex;align-items:center;gap:8px;padding:0 10px;height:60px;box-sizing:border-box;border-radius:12px;background:#121A16;border:1px solid #223128}
+      #initial-below-hero-shell .ihs-ticon{width:32px;height:32px;border-radius:9999px;background:#1E170A;border:1px solid rgba(217,119,6,.3);flex-shrink:0}
+      #initial-below-hero-shell .ihs-cats{padding:24px 0;background:#0A0E0C;border-top:1px solid #1C2822;border-bottom:1px solid #1C2822;min-height:304px;box-sizing:border-box;overflow:hidden}
+      #initial-below-hero-shell .ihs-cats-inner{max-width:80rem;margin:0 auto;padding:0 12px}
+      #initial-below-hero-shell .ihs-cats-row{display:flex;gap:12px;overflow:hidden;padding:8px 0}
+      #initial-below-hero-shell .ihs-ccard{width:13rem;flex-shrink:0;border-radius:12px;border:1px solid #223128;background:#121A16;height:238px;box-sizing:border-box;padding:12px;display:flex;flex-direction:column;justify-content:space-between}
+      #initial-below-hero-shell .ihs-bs{max-width:80rem;margin:0 auto;padding:0 12px 38px}
+      #initial-below-hero-shell .ihs-bs-hd{padding-top:9px;display:flex;flex-direction:column;gap:12px;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #212E27}
+      #initial-below-hero-shell .ihs-pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+      #initial-below-hero-shell .ihs-pcard{background:#121A16;border-radius:12px;border:1px solid #223128;overflow:hidden;display:flex;flex-direction:column}
+      #initial-below-hero-shell .ihs-pimg{width:100%;aspect-ratio:1/1;background:#18231D}
+      @media(min-width:640px){
+        #initial-nav-shell .ins-ticker{height:38px;font-size:14px;line-height:20px}
+        #initial-nav-shell .ins-wrap{padding:0 24px}
+        #initial-nav-shell .ins-bar{height:80px}
+        .ihs-hero{height:380px}
+        #initial-below-hero-shell .ihs-trust{padding:20px 16px}
+        #initial-below-hero-shell .ihs-grid{gap:24px}
+        #initial-below-hero-shell .ihs-tcard{padding:0 12px;gap:12px;height:68px}
+        #initial-below-hero-shell .ihs-ticon{width:40px;height:40px}
+        #initial-below-hero-shell .ihs-cats{min-height:354px}
+        #initial-below-hero-shell .ihs-cats-inner{padding:0 24px}
+        #initial-below-hero-shell .ihs-cats-row{gap:20px}
+        #initial-below-hero-shell .ihs-ccard{width:16rem;height:288px;border-radius:16px}
+        #initial-below-hero-shell .ihs-bs-hd{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:40px;padding-bottom:16px}
+        #initial-below-hero-shell .ihs-pgrid{gap:24px}
+        #initial-below-hero-shell .ihs-pcard{border-radius:16px}
+      }
+      @media(min-width:768px){
+        .ihs-hero{height:480px}
+        #initial-below-hero-shell .ihs-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+        #initial-below-hero-shell .ihs-ccard{width:18rem}
+        #initial-below-hero-shell .ihs-pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      }
+      @media(min-width:1024px){
+        #initial-nav-shell .ins-wrap{padding:0 32px}
+        #initial-nav-shell .ins-msearch{display:none}
+        #initial-nav-shell .ins-dnav{display:flex;align-items:center;justify-content:center}
+        .ihs-hero{height:540px}
+        #initial-below-hero-shell .ihs-cats-inner{padding:0 32px}
+        #initial-below-hero-shell .ihs-pgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+      }
+    </style>
   </head>
   <body class="bg-[#0C100E] text-[#F3EFE6] font-['Tajawal',sans-serif] antialiased selection:bg-[#D97706] selection:text-white" style="background-color: #0C100E; color: #F3EFE6; margin: 0; min-height: 100vh;">
-    <div id="root"><div id="initial-hero-shell" style="background:#080C0A;min-height:100vh;font-family:'Tajawal',system-ui,-apple-system,sans-serif;"><style>#initial-hero-shell .ihs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:80rem;margin:0 auto}#initial-hero-shell .ihs-trust{background:#080C0A;border-top:1px solid #1C2822;border-bottom:1px solid #1C2822;padding:16px 12px}#initial-hero-shell .ihs-tcard{display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;background:#121A16;border:1px solid #223128}#initial-hero-shell .ihs-ticon{width:32px;height:32px;border-radius:9999px;background:#1E170A;border:1px solid rgba(217,119,6,.3);flex-shrink:0}#initial-hero-shell .ihs-cats{padding:24px 12px;background:#0A0E0C;border-bottom:1px solid #1C2822;min-height:304px;overflow:hidden}#initial-hero-shell .ihs-cats-row{max-width:80rem;margin:0 auto;display:flex;gap:12px;overflow:hidden;padding:8px 0}#initial-hero-shell .ihs-ccard{width:13rem;flex-shrink:0;border-radius:12px;border:1px solid #223128;background:#121A16;height:238px;padding:12px;display:flex;flex-direction:column;justify-content:space-between}@media(min-width:640px){#initial-hero-shell .ihs-hero{height:380px!important}#initial-hero-shell .ihs-trust{padding:20px 16px}#initial-hero-shell .ihs-grid{gap:24px}#initial-hero-shell .ihs-tcard{padding:12px;gap:12px}#initial-hero-shell .ihs-ticon{width:40px;height:40px}#initial-hero-shell .ihs-cats{min-height:354px}#initial-hero-shell .ihs-ccard{width:16rem;height:288px;border-radius:16px}}@media(min-width:768px){#initial-hero-shell .ihs-hero{height:480px!important}#initial-hero-shell .ihs-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:1024px){#initial-hero-shell .ihs-hero{height:540px!important}#initial-hero-shell header>div:nth-child(3){display:none!important}#initial-hero-shell header>div:nth-child(2){height:80px!important}}</style><header style="background:#0F1512;border-bottom:1px solid #212E27;"><div style="background:#070A09;height:36px;border-bottom:1px solid #1A2620;display:flex;align-items:center;justify-content:center;font-size:12px;color:#E2D7C3;overflow:hidden;white-space:nowrap;">🌿 مرحباً بكم في natural-morocco — منتجات طبيعية 100% وتوصيل لجميع مدن المغرب 🇲🇦</div><div style="max-width:80rem;margin:0 auto;padding:0 12px;height:64px;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:8px;background:#1E332B;border:1px solid rgba(217,119,6,.4);"></div><span style="font-weight:800;font-size:18px;color:#FAF5EC;">natural-morocco</span></div><div style="width:76px;height:34px;border-radius:9999px;background:#D97706;"></div></div><div style="padding:0 12px 10px;"><div style="height:34px;border-radius:9999px;background:#16201B;border:1px solid #2B3C32;"></div></div></header><section class="ihs-hero" aria-label="عرض ترحيبي" style="position:relative;width:100%;height:220px;background:#0A0E0C;overflow:hidden;border-bottom:1px solid #1C2822;"><picture style="display:block;width:100%;height:100%;"><source media="(max-width:640px)" srcset="/assets/images/hero_spices_mobile.webp" type="image/webp" /><source srcset="/assets/images/hero_spices_1793739545710.webp" type="image/webp" /><img src="/assets/images/hero_spices_mobile.webp" alt="دليل أسرار العافية الطبيعية بالمغرب - natural-morocco" width="1080" height="608" fetchpriority="high" decoding="sync" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" /></picture></section><section class="ihs-trust" aria-hidden="true"><div class="ihs-grid"><div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;color:#FAF5EC;">طبيعي 100%</div><div style="font-size:10px;color:#A89C89;">بدون مواد حافظة</div></div></div><div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;color:#FAF5EC;">الدفع عند الاستلام</div><div style="font-size:10px;color:#A89C89;">افحص قبل الدفع</div></div></div><div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;color:#FAF5EC;">شحن لجميع المدن</div><div style="font-size:10px;color:#A89C89;">توصيل لباب البيت</div></div></div><div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;color:#FAF5EC;">خبرة منذ 1998</div><div style="font-size:10px;color:#A89C89;">أصالة العطارة</div></div></div></div></section><section class="ihs-cats" aria-hidden="true"><div class="ihs-cats-row"><div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div><div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div><div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div><div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div></div></section><section aria-hidden="true" style="max-width:80rem;margin:0 auto;padding:9px 12px 24px;"><div style="border-bottom:1px solid #212E27;padding-bottom:12px;margin-bottom:16px;"><div style="font-size:12px;font-weight:700;color:#F59E0B;margin-bottom:4px;">اختيار زبنائنا الأوفياء</div><div style="font-size:20px;font-weight:900;color:#FAF5EC;">المنتجات الأكثر طلباً</div></div></section></div></div>
+    <div id="app-shell">
+      <div id="navbar-slot">
+        <header id="initial-nav-shell">
+          <div class="ins-ticker">🌿 مرحباً بكم في natural-morocco — منتجات طبيعية 100% وتوصيل لجميع مدن المغرب 🇲🇦</div>
+          <div class="ins-wrap">
+            <div class="ins-bar">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:#1E332B;border:1px solid rgba(217,119,6,.4);"></div>
+                <span style="font-weight:800;font-size:16px;color:#FAF5EC;">natural-morocco</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="width:42px;height:34px;border-radius:9999px;background:#16201B;border:1px solid #293B30;"></div>
+                <div style="width:68px;height:34px;border-radius:9999px;background:#D97706;"></div>
+                <div style="width:44px;height:44px;"></div>
+              </div>
+            </div>
+            <div class="ins-msearch">
+              <div style="height:38px;box-sizing:border-box;border-radius:9999px;background:#16201B;border:1px solid #2B3C32;"></div>
+            </div>
+            <div class="ins-dnav"></div>
+          </div>
+        </header>
+        <div id="navbar-portal"></div>
+      </div>
+
+      <div id="hero-slot">
+        <section id="home" aria-label="سلايدر العروض الترويجية" class="ihs-hero">
+          <div id="hero-slide-0" style="position:absolute;inset:0;z-index:10;opacity:1;transition:opacity 700ms ease-in-out;">
+            <picture style="display:block;width:100%;height:100%;">
+              <source media="(max-width:640px)" srcset="/assets/images/hero_spices_mobile.webp" type="image/webp" />
+              <source srcset="/assets/images/hero_spices_1793739545710.webp" type="image/webp" />
+              <img src="/assets/images/hero_spices_mobile.webp" alt="دليل أسرار العافية الطبيعية بالمغرب - natural-morocco" width="1080" height="608" fetchpriority="high" decoding="sync" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" />
+            </picture>
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(10,14,12,.8),transparent,rgba(10,14,12,.4));pointer-events:none;"></div>
+          </div>
+          <div id="hero-overlay-portal"></div>
+        </section>
+      </div>
+
+      <div id="root" style="flex:1;display:flex;flex-direction:column;">
+        <div id="initial-below-hero-shell" aria-hidden="true">
+          <section class="ihs-trust">
+            <div class="ihs-grid">
+              <div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;line-height:16px;color:#FAF5EC;">طبيعي 100%</div><div style="font-size:10px;line-height:14px;color:#A89C89;">بدون مواد حافظة</div></div></div>
+              <div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;line-height:16px;color:#FAF5EC;">الدفع عند الاستلام</div><div style="font-size:10px;line-height:14px;color:#A89C89;">افحص قبل الدفع</div></div></div>
+              <div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;line-height:16px;color:#FAF5EC;">شحن لجميع المدن</div><div style="font-size:10px;line-height:14px;color:#A89C89;">توصيل لباب البيت</div></div></div>
+              <div class="ihs-tcard"><div class="ihs-ticon"></div><div><div style="font-weight:700;font-size:12px;line-height:16px;color:#FAF5EC;">خبرة منذ 1998</div><div style="font-size:10px;line-height:14px;color:#A89C89;">أصالة العطارة</div></div></div>
+            </div>
+          </section>
+          <section class="ihs-cats">
+            <div class="ihs-cats-inner">
+              <div class="ihs-cats-row">
+                <div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div>
+                <div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div>
+                <div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div>
+                <div class="ihs-ccard"><div style="height:128px;background:#1A2620;border-radius:8px;"></div><div style="height:14px;width:75%;background:#1A2620;border-radius:4px;"></div><div style="height:12px;width:50%;background:#1A2620;border-radius:4px;"></div></div>
+              </div>
+            </div>
+          </section>
+          <section class="ihs-bs">
+            <div class="ihs-bs-hd">
+              <div>
+                <div style="font-size:12px;line-height:16px;font-weight:700;color:#F59E0B;margin-bottom:6px;">اختيار زبنائنا الأوفياء</div>
+                <div style="font-size:20px;line-height:28px;font-weight:900;color:#FAF5EC;">المنتجات الأكثر طلباً</div>
+                <div style="font-size:12px;line-height:16px;min-height:32px;color:#A89C89;margin-top:4px;">الأعشاب والتوابل والزيوت الطبيعية التي نالت أعلى تقييمات ونالت ثقة العائلات المغربية.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="height:30px;padding:0 12px;border-radius:12px;background:#1A2620;border:1px solid #2D4236;font-size:12px;line-height:28px;font-weight:700;color:#FAF5EC;">عرض جميع المنتجات ←</div>
+                <div style="height:28px;padding:0 12px;border-radius:9999px;background:#15201A;border:1px solid #26382E;font-size:12px;line-height:26px;font-weight:700;color:#F3BA63;">جودة بلديّة مضمونة</div>
+              </div>
+            </div>
+            <div class="ihs-pgrid">
+              <div class="ihs-pcard"><div class="ihs-pimg"></div><div style="padding:8px;"><div style="height:16px;margin-bottom:4px;background:#1D2B22;border-radius:4px;"></div><div style="height:28px;background:#23332A;border-radius:4px;width:80%;"></div><div style="height:16px;margin-top:4px;background:#1D2B22;border-radius:4px;width:55%;"></div><div style="margin-top:6px;padding-top:6px;border-top:1px solid #202D25;"><div style="height:24px;margin-bottom:6px;background:#25382E;border-radius:4px;width:60%;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="height:36px;border-radius:8px;background:#23332A;"></div><div style="height:36px;border-radius:8px;background:#1E2D24;"></div></div></div></div></div>
+              <div class="ihs-pcard"><div class="ihs-pimg"></div><div style="padding:8px;"><div style="height:16px;margin-bottom:4px;background:#1D2B22;border-radius:4px;"></div><div style="height:28px;background:#23332A;border-radius:4px;width:80%;"></div><div style="height:16px;margin-top:4px;background:#1D2B22;border-radius:4px;width:55%;"></div><div style="margin-top:6px;padding-top:6px;border-top:1px solid #202D25;"><div style="height:24px;margin-bottom:6px;background:#25382E;border-radius:4px;width:60%;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="height:36px;border-radius:8px;background:#23332A;"></div><div style="height:36px;border-radius:8px;background:#1E2D24;"></div></div></div></div></div>
+              <div class="ihs-pcard"><div class="ihs-pimg"></div><div style="padding:8px;"><div style="height:16px;margin-bottom:4px;background:#1D2B22;border-radius:4px;"></div><div style="height:28px;background:#23332A;border-radius:4px;width:80%;"></div><div style="height:16px;margin-top:4px;background:#1D2B22;border-radius:4px;width:55%;"></div><div style="margin-top:6px;padding-top:6px;border-top:1px solid #202D25;"><div style="height:24px;margin-bottom:6px;background:#25382E;border-radius:4px;width:60%;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="height:36px;border-radius:8px;background:#23332A;"></div><div style="height:36px;border-radius:8px;background:#1E2D24;"></div></div></div></div></div>
+              <div class="ihs-pcard"><div class="ihs-pimg"></div><div style="padding:8px;"><div style="height:16px;margin-bottom:4px;background:#1D2B22;border-radius:4px;"></div><div style="height:28px;background:#23332A;border-radius:4px;width:80%;"></div><div style="height:16px;margin-top:4px;background:#1D2B22;border-radius:4px;width:55%;"></div><div style="margin-top:6px;padding-top:6px;border-top:1px solid #202D25;"><div style="height:24px;margin-bottom:6px;background:#25382E;border-radius:4px;width:60%;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="height:36px;border-radius:8px;background:#23332A;"></div><div style="height:36px;border-radius:8px;background:#1E2D24;"></div></div></div></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
     <script>
       (function() {
-        var p = location.pathname;
+        var p = location.pathname.toLowerCase();
         var s = location.search;
         var h = location.hash.toLowerCase();
-        if (p !== '/' || h.indexOf('admin') !== -1 || s.indexOf('product=') !== -1 || s.indexOf('category=') !== -1) {
-          var shell = document.getElementById('initial-hero-shell');
-          if (shell) shell.remove();
+        var isHome = (p === '/' || p === '/policy' || p === '/terms') && h.indexOf('admin') === -1 && h.indexOf('products') === -1 && h.indexOf('cart') === -1 && h.indexOf('order-tracking') === -1 && s.indexOf('product=') === -1 && s.indexOf('category=') === -1;
+        if (!isHome) {
+          var hs = document.getElementById('hero-slot');
+          if (hs) hs.style.display = 'none';
+          var bs = document.getElementById('initial-below-hero-shell');
+          if (bs) bs.style.display = 'none';
         }
       })();
     </script>

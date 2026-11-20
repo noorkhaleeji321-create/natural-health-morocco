@@ -145,8 +145,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       <div className="p-2 sm:p-3.5 md:p-4 flex-1 flex flex-col justify-between">
         <div>
           {/* Rating & Stock status header */}
-          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#A39683] mb-1 gap-1">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#A39683] h-4 mb-1 gap-1">
+            <div className="flex items-center gap-1 min-w-0">
               <span
                 className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full inline-block shrink-0 ${
                   product.inStock
@@ -170,22 +170,20 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           </div>
 
           {/* Product Title */}
-          <h3 className="font-bold text-[11.5px] sm:text-base text-[#FAF5EC] group-hover:text-[#F59E0B] transition-colors leading-tight sm:leading-snug line-clamp-2 min-h-[1.75rem] sm:min-h-0">
+          <h3 className="font-bold text-[11.5px] sm:text-base text-[#FAF5EC] group-hover:text-[#F59E0B] transition-colors leading-[14px] sm:leading-snug line-clamp-2 min-h-[28px] sm:min-h-[2.75rem]">
             {product.name}
           </h3>
 
           {/* Shortened Product Description (أول كلمتين متبوعة بـ نقاط ...) */}
-          {shortDesc && (
-            <p className="text-[10px] sm:text-xs text-[#A89C89] mt-1 font-medium text-right" dir="rtl">
-              {shortDesc}
-            </p>
-          )}
+          <p className="text-[10px] sm:text-xs leading-4 sm:leading-5 h-4 sm:h-5 text-[#A89C89] mt-1 font-medium text-right truncate" dir="rtl">
+            {shortDesc || '\u00A0'}
+          </p>
         </div>
 
         {/* Price, Unit & Action */}
         <div className="pt-1.5 sm:pt-2.5 mt-1.5 sm:mt-2.5 border-t border-[#202D25] space-y-1.5 sm:space-y-2.5">
-          <div className="flex items-center justify-between gap-1.5 flex-wrap">
-            <div className="flex items-baseline gap-1.5 flex-wrap">
+          <div className="flex items-center justify-between gap-1 h-6 sm:h-7 overflow-hidden">
+            <div className="flex items-baseline gap-1 min-w-0 whitespace-nowrap">
               <div className="flex items-baseline gap-0.5">
                 <span className="text-sm sm:text-xl font-black text-[#FAF5EC] font-['Cairo']">
                   {product.price}
@@ -194,14 +192,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </div>
               {hasOldPrice && (
                 <span
-                  className="text-[10px] sm:text-xs text-[#8E8272] line-through font-mono decoration-[#EF4444]/70"
+                  className="text-[9px] sm:text-xs text-[#8E8272] line-through font-mono decoration-[#EF4444]/70"
                   aria-label={`السعر القديم ${oldPriceNum} درهم`}
                 >
                   {oldPriceNum} DH
                 </span>
               )}
             </div>
-            <span className="text-[8.5px] sm:text-[10px] text-[#A89C89] font-medium bg-[#1A2520] border border-[#28392F] px-1 py-0.5 rounded-xs sm:rounded-sm shrink-0">
+            <span className="text-[8.5px] sm:text-[10px] text-[#A89C89] font-medium bg-[#1A2520] border border-[#28392F] px-1 py-0.5 rounded-xs sm:rounded-sm max-w-[44%] truncate shrink-0">
               {product.unit}
             </span>
           </div>

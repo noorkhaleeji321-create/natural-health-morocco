@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { HeroSlide } from '../types';
 import { initialHeroSlides } from '../data/storeData';
@@ -14,7 +15,47 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
   const [canLoadOtherSlides, setCanLoadOtherSlides] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  const activeSlides = (slides && slides.length > 0) ? slides : initialHeroSlides;
+  const activeSlides = slides && slides.length > 0 ? slides : initialHeroSlides;
+  const overlayMount =
+    typeof document !== 'undefined' ? document.getElementById('hero-overlay-portal') : null;
+
+  const isDefaultSlide0 =
+    !activeSlides[0]?.image || activeSlides[0].image.includes('hero_spices');
+
+  const getSlideSources = (imagePath?: string) => {
+    if (!imagePath) return null;
+    if (imagePath.includes('hero_spices')) {
+      return {
+        mobile: '/assets/images/hero_spices_mobile.webp',
+        desktop: '/assets/images/hero_spices_1793739545710.webp',
+      };
+    }
+    if (imagePath.includes('hero_perfume')) {
+      return {
+        mobile: '/assets/images/hero_perfume_mobile.webp',
+        desktop: '/assets/images/hero_perfume_1793739561627.webp',
+      };
+    }
+    if (imagePath.includes('hero_honey_tea')) {
+      return {
+        mobile: '/assets/images/hero_honey_tea_mobile.webp',
+        desktop: '/assets/images/hero_honey_tea_1793739587352.webp',
+      };
+    }
+    if (imagePath.includes('hero_dates_honey')) {
+      return {
+        mobile: '/assets/images/hero_dates_honey_mobile.webp',
+        desktop: '/assets/images/hero_dates_honey_1793739602965.webp',
+      };
+    }
+    if (imagePath.includes('hero_market_morocco')) {
+      return {
+        mobile: '/assets/images/hero_market_morocco_mobile.webp',
+        desktop: '/assets/images/hero_market_morocco_desktop.webp',
+      };
+    }
+    return null;
+  };
 
   // Defer background slides loading past initial LCP & category paint so Slide 0 gets 100% bandwidth
   useEffect(() => {
@@ -52,72 +93,65 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
     setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
   };
 
-  // Touch swipe support for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
+  // Sync static persistent #hero-slide-0 DOM node without unmounting the initial LCP <img>
+  useLayoutEffect(() => {
+    if (!overlayMount) return;
+    const slide0El = document.getElementById('hero-slide-0');
+    if (!slide0El) return;
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) {
-      setCanLoadOtherSlides(true);
-      if (diff > 0) {
-        handleNext();
-      } else {
-        handlePrev();
-      }
+    if (!isDefaultSlide0) {
+      slide0El.style.display = 'none';
+      return;
     }
-    touchStartX.current = null;
-  };
+
+    slide0El.style.display = '';
+    const isActive = currentIndex === 0;
+    slide0El.style.opacity = isActive ? '1' : '0';
+    slide0El.style.zIndex = isActive ? '10' : '0';
+    slide0El.style.pointerEvents = isActive ? 'auto' : 'none';
+  }, [overlayMount, isDefaultSlide0, currentIndex]);
+
+  // Attach hover pause & swipe gesture listeners directly on persistent #home section when portaling
+  useEffect(() => {
+    if (!overlayMount) return;
+    const heroSection = document.getElementById('home');
+    if (!heroSection) return;
+
+    const onEnter = () => setIsPaused(true);
+    const onLeave = () => setIsPaused(false);
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0]?.clientX ?? null;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null) return;
+      const diff = touchStartX.current - (e.changedTouches[0]?.clientX ?? 0);
+      if (Math.abs(diff) > 40) {
+        setCanLoadOtherSlides(true);
+        if (diff > 0) {
+          setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
+        } else {
+          setCurrentIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+        }
+      }
+      touchStartX.current = null;
+    };
+
+    heroSection.addEventListener('mouseenter', onEnter);
+    heroSection.addEventListener('mouseleave', onLeave);
+    heroSection.addEventListener('touchstart', onTouchStart, { passive: true });
+    heroSection.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      heroSection.removeEventListener('mouseenter', onEnter);
+      heroSection.removeEventListener('mouseleave', onLeave);
+      heroSection.removeEventListener('touchstart', onTouchStart);
+      heroSection.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [overlayMount, activeSlides.length]);
 
   const currentSlide = activeSlides[currentIndex] || activeSlides[0] || initialHeroSlides[0];
 
-  const getSlideSources = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (imagePath.includes('hero_spices')) {
-      return {
-        mobile: '/assets/images/hero_spices_mobile.webp',
-        desktop: '/assets/images/hero_spices_1793739545710.webp',
-      };
-    }
-    if (imagePath.includes('hero_perfume')) {
-      return {
-        mobile: '/assets/images/hero_perfume_mobile.webp',
-        desktop: '/assets/images/hero_perfume_1793739561627.webp',
-      };
-    }
-    if (imagePath.includes('hero_honey_tea')) {
-      return {
-        mobile: '/assets/images/hero_honey_tea_mobile.webp',
-        desktop: '/assets/images/hero_honey_tea_1793739587352.webp',
-      };
-    }
-    if (imagePath.includes('hero_dates_honey')) {
-      return {
-        mobile: '/assets/images/hero_dates_honey_mobile.webp',
-        desktop: '/assets/images/hero_dates_honey_1793739602965.webp',
-      };
-    }
-    if (imagePath.includes('hero_market_morocco')) {
-      return {
-        mobile: '/assets/images/hero_market_morocco_mobile.webp',
-        desktop: '/assets/images/hero_market_morocco_desktop.webp',
-      };
-    }
-    return null;
-  };
-
-  return (
-    <section
-      id="home"
-      aria-label="سلايدر العروض الترويجية"
-      className="relative w-full h-[220px] sm:h-[380px] md:h-[480px] lg:h-[540px] bg-[#0A0E0C] overflow-hidden text-white select-none group border-b border-[#1C2822]"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+  const renderSlidesAndControls = (skipSlide0: boolean) => (
+    <>
       {/* Semantic H1 for SEO & Accessibility compliance */}
       <h1 className="sr-only">
         {currentSlide.title || 'natural-morocco — دليل أسرار العافية الطبيعية والمنتجات الصحية 100% بالمغرب'}
@@ -125,9 +159,11 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
 
       {/* Slides Background Container */}
       {activeSlides.map((slide, idx) => {
+        if (skipSlide0 && idx === 0 && isDefaultSlide0) {
+          return null;
+        }
         const isActive = idx === currentIndex;
         const isNext = idx === (currentIndex + 1) % activeSlides.length;
-        // Slide 0 always renders immediately; background slides only render when permitted
         const shouldRenderImg = idx === 0 || ((isActive || isNext) && canLoadOtherSlides);
         const responsiveSources = getSlideSources(slide.image);
 
@@ -173,8 +209,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
                 <Sparkles className="w-12 h-12 text-[#D97706]/40" />
               </div>
             )}
-            {/* Subtle Gradient vignette for contrast and depth */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E0C]/80 via-transparent to-[#0A0E0C]/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E0C]/80 via-transparent to-[#0A0E0C]/40 pointer-events-none" />
           </div>
         );
       })}
@@ -201,7 +236,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
         </>
       )}
 
-      {/* Clean & Discreet Indicator Dots (No bulky background box, zero view obstruction) */}
+      {/* Indicator Dots */}
       {activeSlides.length > 1 && (
         <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 pointer-events-auto">
           {activeSlides.map((_, dotIdx) => (
@@ -226,6 +261,35 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
           ))}
         </div>
       )}
+    </>
+  );
+
+  if (overlayMount) {
+    return createPortal(renderSlidesAndControls(true), overlayMount);
+  }
+
+  return (
+    <section
+      id="home"
+      aria-label="سلايدر العروض الترويجية"
+      className="relative w-full h-[220px] sm:h-[380px] md:h-[480px] lg:h-[540px] bg-[#0A0E0C] overflow-hidden text-white select-none group border-b border-[#1C2822]"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0].clientX;
+      }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current === null) return;
+        const diff = touchStartX.current - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 40) {
+          setCanLoadOtherSlides(true);
+          if (diff > 0) handleNext();
+          else handlePrev();
+        }
+        touchStartX.current = null;
+      }}
+    >
+      {renderSlidesAndControls(false)}
     </section>
   );
 };

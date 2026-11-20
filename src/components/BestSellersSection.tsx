@@ -33,7 +33,7 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
           <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-[#FAF5EC] font-['Cairo'] tracking-tight">
             المنتجات الأكثر طلباً
           </h2>
-          <p className="text-xs sm:text-sm text-[#A89C89] mt-1">
+          <p className="text-xs sm:text-sm leading-4 sm:leading-5 min-h-[2rem] sm:min-h-[1.25rem] text-[#A89C89] mt-1">
             الأعشاب والتوابل والزيوت الطبيعية التي نالت أعلى تقييمات ونالت ثقة العائلات المغربية.
           </p>
         </div>

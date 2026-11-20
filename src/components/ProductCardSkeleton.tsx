@@ -19,19 +19,19 @@ export const ProductCardSkeleton: React.FC<ProductCardSkeletonProps> = ({ count 
           </div>
 
           {/* Skeleton Body Area */}
-          <div className="p-2 sm:p-3.5 md:p-4 flex-1 flex flex-col justify-between space-y-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+          <div className="p-2 sm:p-3.5 md:p-4 flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between h-4 mb-1">
                 <div className="w-12 h-3 bg-[#1D2B22] rounded-md" />
                 <div className="w-10 h-3 bg-[#1D2B22] rounded-md" />
               </div>
-              <div className="w-3/4 h-4 bg-[#23332A] rounded-md" />
-              <div className="w-1/2 h-3 bg-[#1D2B22] rounded-md" />
+              <div className="w-3/4 h-[28px] sm:h-[44px] bg-[#23332A] rounded-md" />
+              <div className="w-1/2 h-4 sm:h-5 mt-1 bg-[#1D2B22] rounded-md" />
             </div>
 
             {/* Skeleton Price and Action Buttons (Matches ProductCard exactly) */}
             <div className="pt-1.5 sm:pt-2.5 mt-1.5 sm:mt-2.5 border-t border-[#202D25] space-y-1.5 sm:space-y-2.5">
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1 h-6 sm:h-7">
                 <div className="w-16 h-5 bg-[#25382E] rounded" />
                 <div className="w-10 h-4 bg-[#1B2920] rounded" />
               </div>
