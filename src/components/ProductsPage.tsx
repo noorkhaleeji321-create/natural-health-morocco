@@ -35,6 +35,88 @@ const STORE_POPULAR_TERMS = [
   'العكر الفاسي',
 ];
 
+const CATEGORY_POPULAR_TERMS: Record<string, string[]> = {
+  'العناية الطبيعية بالصحة والجمال': [
+    'سموكصول',
+    'قطرات الأذن',
+    'دهن البواسير',
+    'بخاخ الأكزيما',
+    'ماء الكمأة',
+  ],
+  'العناية بالشعر وفروة الرأس': [
+    'زيت 108 عشبة',
+    'زريعة الكيف',
+    'شامبو السدر',
+    'القمل والصيبان',
+    'زيت السدر',
+    'صابون شامبو',
+  ],
+  'مستحضرات العناية بالبشرة والوجه': [
+    'زبدة الحلبة',
+    'زيت الكركم',
+    'النيلة الزرقاء',
+    'العكر الفاسي',
+    'صابون الطماطم',
+    'صابون السدر',
+    'صابون الكركم',
+  ],
+  'الكريمات والزبدات الطبيعية': [
+    'كريم نعومي',
+    'مضاد للثآليل',
+    'كريم البكبوكة',
+  ],
+  'العناية بالجسم': [
+    'زيت الحلبة',
+    'التين الشوكي',
+    'فطريات الأظافر',
+    'تشققات القدمين',
+  ],
+  'المكملات الطبيعية': [
+    'كولاجين',
+  ],
+  'الأقنعة والوصفات الطبيعية': [],
+  'العناية بالفم والأسنان': [
+    'حمام الأسنان',
+  ],
+  'عناية متكاملة لراحة المفاصل واستعادة الحيوية': [
+    'دهن سنام الجمل',
+    'سكوربيون روبالم',
+    'زيت الحنظل',
+    'بخاخ مسكن الآلام',
+    'مرهم أبونيكي',
+    'مرهم سم النحل',
+  ],
+  'خلطات صحراوية طبيعية': [
+    'المسمنة السريعة',
+    'شحم ذروة الجمل',
+  ],
+  'مستحضرات التجميل والعطور الطبيعية': [
+    'كريم فاريكوسيت',
+    'العكر الفاسي',
+  ],
+  'الزيوت الطبيعية النقية': [
+    'زريعة الحشيش',
+    'زيت الكولاجين',
+    'زيت النمل',
+    'زيت الورد',
+    'زيت السدر',
+    'زيت الحلبة',
+    'إكليل الجبل',
+    'اللوز الحلو',
+    'زيت الخروع',
+    'اللوز المر',
+  ],
+};
+
+function extractArabicProductKeyword(name: string): string {
+  const arabicWords = name
+    .replace(/[^\u0600-\u06FF\s]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+  return arabicWords.slice(0, 3).join(' ');
+}
+
 export const ProductsPage: React.FC<ProductsPageProps> = ({
   products,
   onAddToCart,
@@ -50,6 +132,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
   // Sync category filter whenever route prop changes
   useEffect(() => {
     setSelectedCategory(initialCategory ?? null);
+    setSearchQuery('');
   }, [initialCategory]);
 
   // Reset pagination to first 20 products whenever category, search, or sorting changes
@@ -57,15 +140,26 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     setVisibleCount(20);
   }, [selectedCategory, searchQuery, sortBy]);
 
-  // Compute authentic popular search keywords guaranteed to exist in the current catalog
+  // Products scoped to active category (or all store products)
+  const categoryScopedProducts = useMemo(() => {
+    if (!selectedCategory) return products;
+    const target = selectedCategory.trim();
+    return products.filter((p) => (p.category || '').trim() === target);
+  }, [products, selectedCategory]);
+
+  // Compute authentic popular search keywords guaranteed to match real products in the active catalog/category
   const quickSearchTags = useMemo(() => {
-    if (!products || products.length === 0) {
-      return STORE_POPULAR_TERMS.slice(0, 6);
+    const scope = categoryScopedProducts;
+    if (!scope || scope.length === 0) {
+      return [];
     }
 
-    const matched = STORE_POPULAR_TERMS.filter((term) => {
+    const catKey = selectedCategory ? selectedCategory.trim() : null;
+    const curatedPool = catKey ? CATEGORY_POPULAR_TERMS[catKey] || [] : STORE_POPULAR_TERMS;
+
+    const matchedCurated = curatedPool.filter((term) => {
       const q = term.toLowerCase();
-      return products.some(
+      return scope.some(
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.category.toLowerCase().includes(q) ||
@@ -73,27 +167,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
       );
     });
 
-    if (matched.length >= 4) {
-      return matched;
-    }
-
-    // Fallback to clean short titles extracted from actual products if store items change
-    const dynamicFallbacks = products
-      .slice(0, 6)
-      .map((p) => p.name.trim().split(/\s+/).slice(0, 2).join(' '))
+    const dynamicFromProducts = scope
+      .map((p) => extractArabicProductKeyword(p.name))
       .filter((t) => t.length >= 3);
 
-    return Array.from(new Set([...matched, ...dynamicFallbacks])).slice(0, 6);
-  }, [products]);
+    const combined = Array.from(new Set([...matchedCurated, ...dynamicFromProducts]));
+    return (matchedCurated.length > 0 && catKey ? matchedCurated : combined).slice(0, 8);
+  }, [categoryScopedProducts, selectedCategory]);
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
-    let result = [...products];
-
-    // 1. Category Filter
-    if (selectedCategory) {
-      result = result.filter((p) => p.category === selectedCategory);
-    }
+    let result = [...categoryScopedProducts];
 
     // 2. Search Query Filter
     if (searchQuery.trim()) {
@@ -141,14 +225,15 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
     }
 
     return result;
-  }, [products, selectedCategory, searchQuery, sortBy]);
+  }, [categoryScopedProducts, searchQuery, sortBy]);
 
-  // Pre-compute category counts in one O(n) pass
+  // Pre-compute category counts in one O(n) pass (normalized by trimmed name)
   const categoryCountMap = useMemo(() => {
     const counts = new Map<string, number>();
     for (const p of products) {
-      if (p.category) {
-        counts.set(p.category, (counts.get(p.category) || 0) + 1);
+      const key = (p.category || '').trim();
+      if (key) {
+        counts.set(key, (counts.get(key) || 0) + 1);
       }
     }
     return counts;
@@ -182,34 +267,38 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#080C0A] text-[#FAF5EC] pb-14 sm:pb-20">
-      {/* Editorial Catalog Header */}
+      {/* Compact Editorial Catalog Header */}
       <header className="border-b border-[#19241E] bg-[#0B100D]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="max-w-2xl space-y-3">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-[#D97706]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 sm:gap-4">
+            <div className="max-w-2xl space-y-1">
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold text-[#D97706]">
                 <span>كتالوج المنتجات الطبيعية الأصيلة</span>
                 <span aria-hidden="true" className="text-[#3A4D41]">·</span>
-                <span className="text-[#A89C89] tabular-nums">{products.length} منتج معتمد</span>
+                <span className="text-[#A89C89] tabular-nums">
+                  {selectedCategory
+                    ? `${categoryScopedProducts.length} منتج في التصنيف`
+                    : `${products.length} منتج معتمد`}
+                </span>
               </div>
 
               <h1
-                className="text-2xl sm:text-4xl lg:text-[2.65rem] font-black text-[#FAF5EC] font-['Cairo'] tracking-tight leading-tight"
+                className="text-base sm:text-xl lg:text-[1.4rem] font-black text-[#FAF5EC] font-['Cairo'] tracking-tight leading-snug"
                 style={{ textWrap: 'balance' }}
               >
                 {selectedCategory ? selectedCategory : 'مجموعة Natural Health Morocco'}
               </h1>
 
-              <p className="text-sm sm:text-[15px] text-[#A89C89] leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-[#A89C89] leading-snug">
                 {selectedCategory
                   ? `تصفح تشكيلة ${selectedCategory} المختارة بعناية من أجود التركيبات الطبيعية مع التوصيل السريع والدفع عند الاستلام.`
                   : 'زيوت نباتية نقية، خلطات صحراوية أصيلة، ومراهم طبيعية للعناية بالصحة والمفاصل والبشرة والشعر.'}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#9C907E] border-t lg:border-t-0 border-[#19241E] pt-4 lg:pt-0 shrink-0">
-              <span className="inline-flex items-center gap-1.5 text-[#C7BCAE]">
-                <ShieldCheck className="w-4 h-4 text-[#D97706] shrink-0" />
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px] text-[#9C907E] border-t lg:border-t-0 border-[#19241E] pt-2 lg:pt-0 shrink-0">
+              <span className="inline-flex items-center gap-1 text-[#C7BCAE]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
                 <span>منتجات طبيعية 100%</span>
               </span>
               <span aria-hidden="true" className="text-[#2D3E34]">|</span>
@@ -221,7 +310,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6 sm:space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-5 sm:space-y-6">
         {/* Refined Catalog Filter & Search Bar */}
         <section
           aria-label="أدوات البحث والتصفية"
@@ -238,7 +327,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن منتج، عشبة، زيت أو كريم (مثال: سنام الجمل، الحلبة، السدر...)"
+                placeholder={
+                  quickSearchTags.length > 0
+                    ? `ابحث عن منتج أو مكون (مثال: ${quickSearchTags.slice(0, 3).join('، ')}...)`
+                    : 'ابحث عن منتج، عشبة، زيت أو كريم...'
+                }
                 className="w-full h-11 sm:h-12 bg-[#131C17] text-[#FAF5EC] pl-11 pr-11 rounded-xl border border-[#25362C] focus:outline-none focus:border-[#D97706] focus:ring-2 focus:ring-[#D97706]/25 text-sm placeholder:text-[#74857A] transition-colors"
               />
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#7D8F84] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -335,7 +428,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               <button
                 type="button"
-                onClick={() => setSelectedCategory(null)}
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearchQuery('');
+                }}
                 className={`min-h-[40px] px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-colors flex items-center gap-2 cursor-pointer ${
                   selectedCategory === null
                     ? 'bg-[#D97706] text-white border-[#D97706]'
@@ -353,13 +449,17 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
               </button>
 
               {categories.map((cat) => {
-                const isSelected = selectedCategory === cat.name;
-                const count = categoryCountMap.get(cat.name) || 0;
+                const isSelected =
+                  selectedCategory !== null && selectedCategory.trim() === cat.name.trim();
+                const count = categoryCountMap.get(cat.name.trim()) || 0;
                 return (
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
+                    onClick={() => {
+                      setSelectedCategory(isSelected ? null : cat.name);
+                      setSearchQuery('');
+                    }}
                     className={`min-h-[40px] px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border transition-colors flex items-center gap-2 cursor-pointer ${
                       isSelected
                         ? 'bg-[#D97706] text-white border-[#D97706]'
