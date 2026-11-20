@@ -231,9 +231,13 @@ function MainAppContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('home');
 
-  // Scroll to top on page transition
+  // Scroll to top only on actual page transitions (skip initial mount to avoid forced reflow)
+  const prevPageRef = React.useRef<PageType>(currentPage);
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (prevPageRef.current !== currentPage) {
+      prevPageRef.current = currentPage;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [currentPage]);
 
   // Add to cart handler
