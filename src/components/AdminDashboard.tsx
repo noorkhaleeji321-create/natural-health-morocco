@@ -12,7 +12,6 @@ import {
   Store,
   AlertCircle,
   CheckCircle2,
-  Cpu,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { AdminProductsTab } from './admin/AdminProductsTab';
@@ -22,7 +21,6 @@ import { AdminPaymentTab } from './admin/AdminPaymentTab';
 import { AdminContentTab } from './admin/AdminContentTab';
 import { AdminGeneralSettingsTab } from './admin/AdminGeneralSettingsTab';
 import { AdminDatabaseTab } from './admin/AdminDatabaseTab';
-import { AdminBotsTab } from './admin/AdminBotsTab';
 
 interface AdminDashboardProps {
   onNavigateToHome: () => void;
@@ -36,7 +34,6 @@ type AdminTab =
   | 'payments'
   | 'content'
   | 'database'
-  | 'bots'
   | 'settings';
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -76,6 +73,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setFeedbackMsg({ text, type });
     setTimeout(() => setFeedbackMsg(null), 3500);
   };
+
+  React.useEffect(() => {
+    try {
+      localStorage.removeItem('said_store_bots_v1');
+    } catch {}
+  }, []);
 
   // ================= ADMIN AUTH GATE =================
   if (!isAdminAuthenticated) {
@@ -175,7 +178,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'payments', label: 'طرق الدفع والـ RIB', icon: CreditCard },
     { id: 'content', label: 'المحتوى والهوية', icon: Store },
     { id: 'database', label: 'قاعدة البيانات', icon: Database },
-    { id: 'bots', label: 'الروبوتات الذكية', icon: Cpu },
     { id: 'settings', label: 'الإعدادات العامة', icon: Settings },
   ];
 
@@ -325,10 +327,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'database' && (
           <AdminDatabaseTab showNotification={showNotification} />
-        )}
-
-        {activeTab === 'bots' && (
-          <AdminBotsTab showNotification={showNotification} />
         )}
 
         {activeTab === 'settings' && (

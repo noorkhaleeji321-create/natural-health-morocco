@@ -8,7 +8,6 @@ import {
   doesOrderMatchTracking,
 } from '../services/firebaseAdmin';
 import { generateDynamicSitemapXml } from '../services/sitemapService';
-import { notifyNewOrder, getBotStatus, getBotLogs, formatWhatsAppOrderUrl, runAutomaticBackup } from '../services/botWorker';
 import { Order, Product, Category, Seller, StoreEntity, Customer, SellerStatus, ProductStatus } from '../../src/types';
 import path from 'path';
 import fs from 'fs';
@@ -474,15 +473,6 @@ router.post('/orders/checkout', (req, res) => {
     }
     dbService.saveOrder(order);
 
-    // Get configured WhatsApp number from store settings if present
-    const storeSettings = dbService.getStoreSettings();
-    const whatsappNum = storeSettings?.whatsapp;
-
-    // Trigger instant order notification & background backup asynchronously
-    notifyNewOrder(order, whatsappNum).catch((err) => {
-      console.warn('[WhatsAppWorker] Order notification background notice:', err);
-    });
-
     res.status(201).json({ success: true, message: 'Order created successfully', orderId: order.id, order });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -529,56 +519,6 @@ const handleTrackOrder = async (req: express.Request, res: express.Response) => 
 
 router.get('/track-order', handleTrackOrder);
 router.post('/track-order', handleTrackOrder);
-
-// ==========================================
-// BOT WORKER & WHATSAPP MONITOR ENDPOINTS
-// ==========================================
-router.get('/bot/status', requireAdminAuth, (_req, res) => {
-  try {
-    const storeSettings = dbService.getStoreSettings();
-    const whatsappNumber = storeSettings?.whatsapp || '212775044615';
-    const status = getBotStatus(whatsappNumber);
-    const logs = getBotLogs();
-    res.json({ success: true, status, logs });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.post('/bot/test-notification', requireAdminAuth, async (req, res) => {
-  try {
-    const storeSettings = dbService.getStoreSettings();
-    const rawPhone = req.body.whatsappNumber || storeSettings?.whatsapp || '212775044615';
-    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
-
-    const sampleOrder: any = {
-      id: 'TEST-' + Math.floor(1000 + Math.random() * 9000),
-      customer: {
-        fullName: 'زبون تجريبي',
-        phone: '0661000000',
-        city: 'الدار البيضاء',
-        address: 'شارع الحسن الثاني، الممر 4',
-      },
-      paymentMethod: 'cod',
-      total: 350,
-      items: [{ product: { name: 'زيت الأرغان الطبيعي التجميلي', price: 175 }, quantity: 2 }],
-    };
-
-    const whatsappUrl = formatWhatsAppOrderUrl(sampleOrder, cleanPhone);
-    res.json({ success: true, whatsappUrl, message: 'جاهز لإرسال الإشعار التجريبي عبر WhatsApp' });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-router.post('/bot/manual-backup', requireAdminAuth, (_req, res) => {
-  try {
-    const result = runAutomaticBackup();
-    res.json({ success: true, ...result });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 
 router.put('/orders/:id', requireAdminAuth, (req, res) => {
   try {

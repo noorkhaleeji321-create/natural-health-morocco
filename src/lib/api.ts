@@ -912,20 +912,4 @@ export const api = {
       return [];
     }
   },
-
-  // AI Content Generator helper
-  async generateAIContent(prompt: string): Promise<string> {
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const json = await res.json();
-      return json.text || '';
-    } catch (err) {
-      console.error('[API] generateAIContent failed:', err);
-      return '';
-    }
-  },
 };
