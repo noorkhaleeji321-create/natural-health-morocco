@@ -445,6 +445,14 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const BOOTSTRAP_SESSION_KEY = 'said_store_bootstrap_cache_v2';
+  const BOOTSTRAP_SESSION_TTL_MS = 10 * 60 * 1000;
+  const invalidateBootstrapSessionCache = () => {
+    try {
+      sessionStorage.removeItem(BOOTSTRAP_SESSION_KEY);
+    } catch {}
+  };
+
   const isSameContent = (a: any, b: any): boolean => {
     if (a === b) return true;
     if (!a || !b) return false;
@@ -645,30 +653,47 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
           }
         };
 
-        // Fast-path for cold storefront visits: fetch same-origin edge-cached /api/bootstrap FIRST
-        // and avoid downloading/parsing the 214KB vendor-firebase chunk during initial LCP/TBT window.
-        if (isInitialColdLoad && !isAdmin) {
-          const bootstrapData = await api.getBootstrap().catch(() => null);
-          if (bootstrapData && Array.isArray(bootstrapData.products) && bootstrapData.products.length > 0) {
-            applyBootstrapData(bootstrapData);
-            if (firebaseEnabled) {
-              if (deferredSyncTimerRef.current) clearTimeout(deferredSyncTimerRef.current);
-              deferredSyncTimerRef.current = setTimeout(() => {
-                void runDirectFirestoreSync();
-              }, 6500);
-            }
+        // Fast-path for public storefront visits: NEVER hit Firestore directly if edge-cached /api/bootstrap
+        // or fresh sessionStorage cache already provides the catalog (protects Firebase Free Tier quota!).
+        if (!isAdmin) {
+          let cachedBootstrap: any = null;
+          if (!isInitialColdLoad) {
+            try {
+              const rawCached = sessionStorage.getItem(BOOTSTRAP_SESSION_KEY);
+              if (rawCached) {
+                const parsed = JSON.parse(rawCached);
+                if (parsed?.ts && Date.now() - parsed.ts < BOOTSTRAP_SESSION_TTL_MS && parsed?.data?.products?.length) {
+                  cachedBootstrap = parsed.data;
+                }
+              }
+            } catch {}
+          }
+
+          if (cachedBootstrap) {
+            applyBootstrapData(cachedBootstrap);
           } else {
-            await runDirectFirestoreSync();
+            const bootstrapData = await api.getBootstrap().catch(() => null);
+            if (bootstrapData && Array.isArray(bootstrapData.products) && bootstrapData.products.length > 0) {
+              applyBootstrapData(bootstrapData);
+              try {
+                sessionStorage.setItem(
+                  BOOTSTRAP_SESSION_KEY,
+                  JSON.stringify({ ts: Date.now(), data: bootstrapData })
+                );
+              } catch {}
+            } else {
+              // Fallback to direct Firestore ONLY when /api/bootstrap is unavailable
+              await runDirectFirestoreSync();
+            }
           }
         } else {
-          // Admin sessions & subsequent live refreshes query Firestore directly in parallel with bootstrap if needed
-          const bootstrapPromise: Promise<any> | null =
-            isAdmin || !firebaseEnabled
-              ? api.getBootstrap().then((data) => {
-                  if (data) applyBootstrapData(data);
-                  return data;
-                }).catch(() => null)
-              : null;
+          // Admin sessions query live Firestore ONLY on explicit load/login/refresh (never via focus/poll spam)
+          const bootstrapPromise: Promise<any> | null = !firebaseEnabled
+            ? api.getBootstrap().then((data) => {
+                if (data) applyBootstrapData(data);
+                return data;
+              }).catch(() => null)
+            : null;
 
           await runDirectFirestoreSync();
 
@@ -683,13 +708,13 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         if (hasLoadedCatalogRef.current) {
           retryAttemptRef.current = 0;
           setIsLoadingProducts(false);
-        } else if (retryAttemptRef.current < 3) {
-          // Schedule automatic recovery retry if first visit failed completely due to transient cold network
+        } else if (retryAttemptRef.current < 2) {
+          // Bounded automatic recovery retry only if initial catalog load failed completely
           retryAttemptRef.current += 1;
           if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
           retryTimerRef.current = setTimeout(() => {
             loadFromServer();
-          }, 2500);
+          }, 3000);
         } else {
           setIsLoadingProducts(false);
         }
@@ -754,25 +779,16 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     };
   }, [products]);
 
-  // Sync immediately on mount, periodically (5 mins), on tab focus (> 15s), and when back online
+  // Fetch catalog once on mount and retry only on reconnect if catalog never loaded (zero polling/tab-focus quota drain)
   useEffect(() => {
     loadFromServer();
 
-    const pollTimer = setInterval(() => {
-      loadFromServer();
-    }, 300000);
-
-    const handleVisibilityOrFocus = () => {
-      if (document.visibilityState === 'visible' && Date.now() - lastFetchTimestampRef.current > 15000) {
+    const handleOnline = () => {
+      if (!hasLoadedCatalogRef.current) {
         loadFromServer();
       }
     };
-    const handleOnline = () => {
-      loadFromServer();
-    };
-    window.addEventListener('focus', handleVisibilityOrFocus);
     window.addEventListener('online', handleOnline);
-    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
       if (retryTimerRef.current) {
@@ -783,10 +799,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         clearTimeout(deferredSyncTimerRef.current);
         deferredSyncTimerRef.current = null;
       }
-      clearInterval(pollTimer);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
       window.removeEventListener('online', handleOnline);
-      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, [loadFromServer]);
 
@@ -836,6 +849,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         () => fsSetDoc('products', newId, cleanForFirestore(newProduct))
       );
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true, product: newProduct };
   };
@@ -860,6 +874,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
 
     const apiRes = await api.updateProduct(id, productToSave);
+    invalidateBootstrapSessionCache();
     if (!apiRes.success) {
       console.warn('[StoreContext] updateProduct backend notice:', apiRes.error);
       return {
@@ -891,15 +906,48 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     reordered.splice(clampedTarget, 0, movedItem);
 
     const nowIso = new Date().toISOString();
-    const changedItems: Product[] = [];
-    const nextProducts = reordered.map((p, idx) => {
-      if (p.sortOrder !== idx) {
-        const updated = { ...p, sortOrder: idx, updatedAt: nowIso };
-        changedItems.push(updated);
-        return updated;
+    const prevNeighbor = clampedTarget > 0 ? reordered[clampedTarget - 1] : null;
+    const nextNeighbor = clampedTarget < reordered.length - 1 ? reordered[clampedTarget + 1] : null;
+    const hasPrevSort = prevNeighbor && typeof prevNeighbor.sortOrder === 'number' && Number.isFinite(prevNeighbor.sortOrder);
+    const hasNextSort = nextNeighbor && typeof nextNeighbor.sortOrder === 'number' && Number.isFinite(nextNeighbor.sortOrder);
+
+    let singleNewSortOrder: number | null = null;
+    if (!prevNeighbor && hasNextSort) {
+      singleNewSortOrder = Math.floor(nextNeighbor!.sortOrder!) - 10;
+    } else if (!nextNeighbor && hasPrevSort) {
+      singleNewSortOrder = Math.ceil(prevNeighbor!.sortOrder!) + 10;
+    } else if (hasPrevSort && hasNextSort) {
+      const a = prevNeighbor!.sortOrder!;
+      const b = nextNeighbor!.sortOrder!;
+      if (b - a >= 2 && Math.floor(b) - Math.ceil(a) >= 2) {
+        const midInt = Math.floor((a + b) / 2);
+        if (midInt > a && midInt < b) singleNewSortOrder = midInt;
       }
-      return p;
-    });
+      if (singleNewSortOrder === null && b - a > 1e-4) {
+        const midFloat = Math.round(((a + b) / 2) * 10000) / 10000;
+        if (midFloat > a && midFloat < b) singleNewSortOrder = midFloat;
+      }
+    }
+
+    let changedItems: Product[] = [];
+    let nextProducts: Product[];
+
+    if (singleNewSortOrder !== null && Number.isFinite(singleNewSortOrder)) {
+      const updatedMoved = { ...movedItem, sortOrder: singleNewSortOrder, updatedAt: nowIso };
+      changedItems = [updatedMoved];
+      nextProducts = reordered.map((p) => (p.id === movedItem.id ? updatedMoved : p));
+    } else {
+      // Fallback: space by 100 so future moves only cost 1 Firestore write each
+      nextProducts = reordered.map((p, idx) => {
+        const targetSort = idx * 100;
+        if (p.sortOrder !== targetSort) {
+          const updated = { ...p, sortOrder: targetSort, updatedAt: nowIso };
+          changedItems.push(updated);
+          return updated;
+        }
+        return p;
+      });
+    }
 
     setProducts(nextProducts);
 
@@ -931,6 +979,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     } catch (err) {
       console.warn('[StoreContext] Local API reorder notice:', err);
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true };
   };
@@ -963,6 +1012,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     } catch (err) {
       console.warn('[StoreContext] Local API deleteProduct skipped:', err);
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true };
   };
@@ -994,6 +1044,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
         () => fsSetDoc('categories', newId, cleanForFirestore(newCategory))
       );
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true, category: newCategory };
   };
@@ -1017,6 +1068,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     }
 
     const apiRes = await api.updateCategory(id, categoryToSave);
+    invalidateBootstrapSessionCache();
     if (!apiRes.success) {
       return {
         success: true,
@@ -1045,6 +1097,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     } catch (err) {
       console.warn('[StoreContext] Local API deleteCategory skipped:', err);
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true };
   };
@@ -1060,6 +1113,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
       );
     }
     api.updateHeroSlides(slides);
+    invalidateBootstrapSessionCache();
     return true;
   };
 
@@ -1242,19 +1296,23 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
 
   const trackOrder = async (orderId: string, phone: string): Promise<Order | null> => {
     const cleanId = normalizeTrackingOrderId(orderId);
-    if (!cleanId || !normalizeTrackingPhone(phone)) {
+    if (!cleanId || cleanId.length < 4 || normalizeTrackingPhone(phone).length < 6) {
       return null;
     }
 
-    // 1. Check same-origin API (queries live Firestore & SQLite on server for latest status)
+    // 1. Check same-origin /api/track-order (runs indexed Firestore query + bounded fallback server-side)
     const apiRes = await api.trackOrder(orderId, phone);
     if (apiRes.success && apiRes.order) {
       setOrders((prev) => mergeOrders(prev, [apiRes.order!]));
       return apiRes.order;
     }
 
-    // 2. Fallback to direct Firestore lookup if API unavailable or unreachable
-    if (isFirebaseConfigured() && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+    // 2. Direct single-document lookup fallback ONLY when /api/track-order was unreachable (never scan all orders!)
+    if (
+      !apiRes.notFound &&
+      isFirebaseConfigured() &&
+      (typeof navigator === 'undefined' || navigator.onLine !== false)
+    ) {
       try {
         const directCandidates = Array.from(
           new Set([cleanId, cleanId.startsWith('SAID-') ? cleanId : `SAID-${cleanId}`].filter(Boolean))
@@ -1271,15 +1329,6 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
             }
           } catch {
             // Try next candidate
-          }
-        }
-
-        const snap = await withTimeout(fsGetDocs('orders'), 12000);
-        for (const d of snap.docs) {
-          const candidateOrder = { ...d.data(), id: d.id } as Order;
-          if (isOrderMatchingTracking(candidateOrder, orderId, phone)) {
-            setOrders((prev) => mergeOrders(prev, [candidateOrder]));
-            return candidateOrder;
           }
         }
       } catch (err) {
@@ -1391,6 +1440,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     } catch (err) {
       console.warn('[StoreContext] Server API updateBankSettings skipped:', err);
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true, firestoreSaved, error: firestoreError || undefined };
   };
@@ -1420,6 +1470,7 @@ const mergeOrders = (listA: Order[], listB: Order[]): Order[] => {
     } catch (err) {
       console.warn('[StoreContext] Server API updateStoreSettings skipped:', err);
     }
+    invalidateBootstrapSessionCache();
 
     return { success: true, firestoreSaved, error: firestoreError || undefined };
   };

@@ -7,6 +7,9 @@ const BASE_URL = 'https://www.natural-health-morocco.online';
 
 let appPromise: Promise<any> | null = null;
 let dbPromise: Promise<any> | null = null;
+const SITEMAP_MEMORY_TTL_MS = 30 * 60 * 1000;
+let sitemapMemoryCache: { xml: string; fetchedAt: number } | null = null;
+let inFlightSitemapPromise: Promise<string> | null = null;
 
 function loadFirebaseConfig(): Record<string, any> {
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
@@ -77,18 +80,29 @@ function formatIsoDate(value: unknown, fallback: string): string {
 
 export default async function handler(_req: any, res: any) {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const db = await getDb();
+    const now = Date.now();
+    if (sitemapMemoryCache && now - sitemapMemoryCache.fetchedAt < SITEMAP_MEMORY_TTL_MS) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+      res.end(sitemapMemoryCache.xml);
+      return;
+    }
 
-    const [prodSnap, catSnap] = await Promise.all([
-      getDocs(collection(db, 'products')),
-      getDocs(collection(db, 'categories')),
-    ]);
+    if (!inFlightSitemapPromise) {
+      inFlightSitemapPromise = (async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const db = await getDb();
 
-    const products = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, any>));
-    const categories = catSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, any>));
+        const [prodSnap, catSnap] = await Promise.all([
+          getDocs(collection(db, 'products')),
+          getDocs(collection(db, 'categories')),
+        ]);
 
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+        const products = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, any>));
+        const categories = catSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, any>));
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
@@ -166,13 +180,20 @@ export default async function handler(_req: any, res: any) {
   </url>`;
     }
 
-    xml += `
+        xml += `
 </urlset>
 `;
+        sitemapMemoryCache = { xml, fetchedAt: Date.now() };
+        return xml;
+      })().finally(() => {
+        inFlightSitemapPromise = null;
+      });
+    }
 
+    const xml = await inFlightSitemapPromise;
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     res.end(xml);
   } catch (err: any) {
     console.error('[Vercel Sitemap] Error:', err?.message || err);

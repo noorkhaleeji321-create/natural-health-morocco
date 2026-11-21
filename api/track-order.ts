@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, collection, getDocs } from 'firebase/firestore/lite';
+import { getFirestore, doc, getDoc, collection, getDocs, query, where, limit } from 'firebase/firestore/lite';
 
 let appPromise: Promise<any> | null = null;
 let dbPromise: Promise<any> | null = null;
@@ -148,6 +148,14 @@ export default async function handler(req: any, res: any) {
 
     const db = await getDb();
     const cleanId = normalizeOrderId(rawOrderId);
+    const cleanPhoneDigits = normalizePhone(rawPhone);
+
+    if (cleanId.length < 4 || cleanPhoneDigits.length < 6) {
+      return sendJson(res, 404, {
+        success: false,
+        error: 'لم يتم العثور على طلب يطابق هذا الرقم وهذا الهاتف. يرجى التأكد من صحة البيانات أو مراجعة رقم الطلب المستلم.',
+      });
+    }
 
     const directCandidates = Array.from(
       new Set([
@@ -156,7 +164,7 @@ export default async function handler(req: any, res: any) {
       ].filter(Boolean))
     );
 
-    // 1. Fast direct document lookup by known ID formats
+    // 1. Fast direct document lookup by known ID formats (1-2 reads max)
     for (const candidateDocId of directCandidates) {
       try {
         const snap = await getDoc(doc(db, 'orders', candidateDocId));
@@ -167,12 +175,28 @@ export default async function handler(req: any, res: any) {
           }
         }
       } catch {
-        // Continue to next candidate or collection scan
+        // Continue to next candidate
       }
     }
 
-    // 2. Collection scan fallback (supports custom orderNumber or partial digits)
-    const snap = await getDocs(collection(db, 'orders'));
+    // 2. Indexed lookup by orderNumber field (avoids scanning entire orders collection)
+    for (const candidateNum of directCandidates) {
+      try {
+        const q = query(collection(db, 'orders'), where('orderNumber', '==', candidateNum), limit(5));
+        const qSnap = await getDocs(q);
+        for (const d of qSnap.docs) {
+          const order = { ...d.data(), id: d.id } as Record<string, any>;
+          if (orderMatchesTracking(order, rawOrderId, rawPhone)) {
+            return sendJson(res, 200, { success: true, order });
+          }
+        }
+      } catch {
+        // Continue to bounded fallback
+      }
+    }
+
+    // 3. Bounded collection fallback (capped to protect Firestore read quota)
+    const snap = await getDocs(query(collection(db, 'orders'), limit(150)));
     for (const d of snap.docs) {
       const order = { ...d.data(), id: d.id } as Record<string, any>;
       if (orderMatchesTracking(order, rawOrderId, rawPhone)) {

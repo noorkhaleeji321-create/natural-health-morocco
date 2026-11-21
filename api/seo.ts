@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
+import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore/lite';
 
 const BASE_SITE_URL = 'https://www.natural-health-morocco.online';
 const DEFAULT_OG_IMAGE = `${BASE_SITE_URL}/assets/aistudio/WhatsApp_Image_2026-10-28_at_19.35.25_6c594579.jpeg`;
@@ -15,7 +15,12 @@ interface CatalogCache {
   fetchedAt: number;
 }
 
+const CATALOG_MEMORY_TTL_MS = 15 * 60 * 1000;
 let catalogCache: CatalogCache | null = null;
+let inFlightCatalogPromise: Promise<{
+  products: Record<string, any>[];
+  categories: Record<string, any>[];
+}> | null = null;
 let templateCache: { html: string; fetchedAt: number } | null = null;
 
 function loadFirebaseConfig(): Record<string, any> {
@@ -61,28 +66,36 @@ async function getDb() {
   return dbPromise;
 }
 
-async function getCatalog(forceRefresh = false): Promise<{
+async function getCatalog(): Promise<{
   products: Record<string, any>[];
   categories: Record<string, any>[];
 }> {
   const now = Date.now();
-  if (!forceRefresh && catalogCache && now - catalogCache.fetchedAt < 60_000) {
+  if (catalogCache && now - catalogCache.fetchedAt < CATALOG_MEMORY_TTL_MS) {
     return { products: catalogCache.products, categories: catalogCache.categories };
   }
 
-  const db = await getDb();
-  const [prodSnap, catSnap] = await Promise.all([
-    getDocs(collection(db, 'products')),
-    getDocs(collection(db, 'categories')),
-  ]);
+  if (!inFlightCatalogPromise) {
+    inFlightCatalogPromise = (async () => {
+      const db = await getDb();
+      const [prodSnap, catSnap] = await Promise.all([
+        getDocs(collection(db, 'products')),
+        getDocs(collection(db, 'categories')),
+      ]);
 
-  const products = prodSnap.docs
-    .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
-    .filter((p) => !p.status || p.status === 'approved');
-  const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Record<string, any>));
+      const products = prodSnap.docs
+        .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
+        .filter((p) => !p.status || p.status === 'approved');
+      const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Record<string, any>));
 
-  catalogCache = { products, categories, fetchedAt: now };
-  return { products, categories };
+      catalogCache = { products, categories, fetchedAt: Date.now() };
+      return { products, categories };
+    })().finally(() => {
+      inFlightCatalogPromise = null;
+    });
+  }
+
+  return inFlightCatalogPromise;
 }
 
 async function getHtmlTemplate(req: any): Promise<string> {
@@ -280,13 +293,21 @@ export default async function handler(req: any, res: any) {
     const template = await getHtmlTemplate(req);
 
     if (type === 'product' && rawId) {
-      let { products, categories } = await getCatalog(false);
+      const { products, categories } = await getCatalog();
       let product = products.find((p) => String(p.id) === rawId);
-      if (!product) {
-        const refreshed = await getCatalog(true);
-        products = refreshed.products;
-        categories = refreshed.categories;
-        product = products.find((p) => String(p.id) === rawId);
+      if (!product && rawId.length <= 120) {
+        try {
+          const db = await getDb();
+          const snap = await getDoc(doc(db, 'products', rawId));
+          if (snap.exists()) {
+            const pData = { ...snap.data(), id: snap.id } as Record<string, any>;
+            if (!pData.status || pData.status === 'approved') {
+              product = pData;
+            }
+          }
+        } catch {
+          // Ignore invalid single-doc lookup
+        }
       }
 
       if (!product) {
@@ -404,27 +425,18 @@ export default async function handler(req: any, res: any) {
 
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
       res.end(rendered);
       return;
     }
 
     if (type === 'category' && rawSlug) {
-      let { products, categories } = await getCatalog(false);
+      const { products, categories } = await getCatalog();
       const normalized = rawSlug.trim();
-      let category = categories.find(
+      const category = categories.find(
         (c) =>
           String(c.slug || '').trim() === normalized || String(c.name || '').trim() === normalized
       );
-      if (!category) {
-        const refreshed = await getCatalog(true);
-        products = refreshed.products;
-        categories = refreshed.categories;
-        category = categories.find(
-          (c) =>
-            String(c.slug || '').trim() === normalized || String(c.name || '').trim() === normalized
-        );
-      }
 
       const categoryName = String(category?.name || normalized).trim();
       const categorySlug = String(category?.slug || normalized).trim();
@@ -500,7 +512,7 @@ export default async function handler(req: any, res: any) {
 
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
       res.end(rendered);
       return;
     }
@@ -513,7 +525,7 @@ export default async function handler(req: any, res: any) {
     let ssrBodyHtml = '';
 
     if (pageName === 'products') {
-      const { products, categories } = await getCatalog(false);
+      const { products, categories } = await getCatalog();
       const catLinks = categories
         .filter((c) => c.slug)
         .map(
@@ -561,7 +573,7 @@ export default async function handler(req: any, res: any) {
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     res.end(rendered);
   } catch (err: any) {
     console.error('[Vercel SEO] Error:', err?.message || err);

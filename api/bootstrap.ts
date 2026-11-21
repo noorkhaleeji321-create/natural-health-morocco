@@ -6,6 +6,10 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
 let appPromise: Promise<any> | null = null;
 let dbPromise: Promise<any> | null = null;
 
+const BOOTSTRAP_MEMORY_TTL_MS = 10 * 60 * 1000;
+let bootstrapMemoryCache: { data: Record<string, any>; fetchedAt: number } | null = null;
+let inFlightBootstrapLoad: Promise<Record<string, any>> | null = null;
+
 function loadFirebaseConfig(): Record<string, any> {
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(configPath)) {
@@ -50,15 +54,46 @@ async function getDb() {
   return dbPromise;
 }
 
+async function fetchBootstrapPayloadFromFirestore(): Promise<Record<string, any>> {
+  const db = await getDb();
+
+  const [prodSnap, catSnap, settingsSnap] = await Promise.all([
+    getDocs(collection(db, 'products')),
+    getDocs(collection(db, 'categories')),
+    getDocs(collection(db, 'settings')),
+  ]);
+
+  return { prodSnap, catSnap, settingsSnap };
+}
+
 export default async function handler(req: any, res: any) {
   try {
-    const db = await getDb();
+    const hasAuth = Boolean(req?.headers?.authorization);
+    const forceFresh = hasAuth || String(req?.query?.fresh || '') === '1';
+    const now = Date.now();
 
-    const [prodSnap, catSnap, settingsSnap] = await Promise.all([
-      getDocs(collection(db, 'products')),
-      getDocs(collection(db, 'categories')),
-      getDocs(collection(db, 'settings')),
-    ]);
+    if (
+      !forceFresh &&
+      bootstrapMemoryCache &&
+      now - bootstrapMemoryCache.fetchedAt < BOOTSTRAP_MEMORY_TTL_MS
+    ) {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
+      res.end(JSON.stringify({ success: true, data: bootstrapMemoryCache.data }));
+      return;
+    }
+
+    if (!inFlightBootstrapLoad) {
+      inFlightBootstrapLoad = (async () => {
+        const { prodSnap, catSnap, settingsSnap } = await fetchBootstrapPayloadFromFirestore();
+        return { prodSnap, catSnap, settingsSnap };
+      })().finally(() => {
+        inFlightBootstrapLoad = null;
+      });
+    }
+
+    const { prodSnap, catSnap, settingsSnap } = await inFlightBootstrapLoad;
 
     const products = prodSnap.docs
       .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
@@ -135,25 +170,28 @@ export default async function handler(req: any, res: any) {
     const rawHero = heroDoc ? (heroDoc.data() as Record<string, any>) : null;
     const heroSlides = rawHero && Array.isArray(rawHero.slides) ? rawHero.slides : [];
 
-    const hasAuth = Boolean(req?.headers?.authorization);
+    const payload = {
+      products,
+      categories,
+      storeSettings: publicStoreSettings,
+      bankSettings: publicBankSettings,
+      heroSlides,
+      orders: [],
+      customers: [],
+    };
+
+    bootstrapMemoryCache = { data: payload, fetchedAt: Date.now() };
+
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
       'Cache-Control',
-      hasAuth ? 'no-store' : 'public, s-maxage=60, stale-while-revalidate=300'
+      hasAuth ? 'no-store' : 'public, s-maxage=1800, stale-while-revalidate=86400'
     );
     res.end(
       JSON.stringify({
         success: true,
-        data: {
-          products,
-          categories,
-          storeSettings: publicStoreSettings,
-          bankSettings: publicBankSettings,
-          heroSlides,
-          orders: [],
-          customers: [],
-        },
+        data: payload,
       })
     );
   } catch (err: any) {

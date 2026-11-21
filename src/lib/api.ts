@@ -59,8 +59,9 @@ export const api = {
   // Bootstrap: get all initial store data in a single request (reusing head prefetch on initial boot)
   async getBootstrap(): Promise<BootstrapData | null> {
     try {
+      const token = getAdminToken();
       const win = typeof window !== 'undefined' ? (window as any) : null;
-      if (win && win.__bootstrapPromise) {
+      if (!token && win && win.__bootstrapPromise) {
         const prefetchedPromise = win.__bootstrapPromise;
         win.__bootstrapPromise = null;
         const json = await prefetchedPromise;
@@ -68,10 +69,12 @@ export const api = {
           return json.data;
         }
       }
-      const res = await fetch('/api/bootstrap', {
+      const endpoint = token ? '/api/bootstrap?fresh=1' : '/api/bootstrap';
+      const res = await fetch(endpoint, {
         headers: {
           ...getAuthHeaders(),
         },
+        ...(token ? { cache: 'no-store' as RequestCache } : {}),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -871,6 +874,7 @@ export const api = {
   async trackOrder(orderId: string, phone: string): Promise<{
     success: boolean;
     order?: Order;
+    notFound?: boolean;
     error?: string;
   }> {
     try {
@@ -887,6 +891,7 @@ export const api = {
       }
       return {
         success: false,
+        notFound: res.status === 404 || res.status === 400,
         error: data?.error,
       };
     } catch (err: any) {
