@@ -6,7 +6,7 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
 let appPromise: Promise<any> | null = null;
 let dbPromise: Promise<any> | null = null;
 
-const BOOTSTRAP_MEMORY_TTL_MS = 10 * 60 * 1000;
+const BOOTSTRAP_MEMORY_TTL_MS = 30 * 1000;
 let bootstrapMemoryCache: { data: Record<string, any>; fetchedAt: number } | null = null;
 let inFlightBootstrapLoad: Promise<Record<string, any>> | null = null;
 
@@ -79,7 +79,7 @@ export default async function handler(req: any, res: any) {
     ) {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=86400');
+      res.setHeader('Cache-Control', 'public, s-maxage=45, stale-while-revalidate=60');
       res.end(JSON.stringify({ success: true, data: bootstrapMemoryCache.data }));
       return;
     }
@@ -186,7 +186,7 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
       'Cache-Control',
-      hasAuth ? 'no-store' : 'public, s-maxage=1800, stale-while-revalidate=86400'
+      hasAuth ? 'no-store' : 'public, s-maxage=45, stale-while-revalidate=60'
     );
     res.end(
       JSON.stringify({

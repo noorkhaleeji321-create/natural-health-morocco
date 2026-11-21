@@ -15,7 +15,7 @@ interface CatalogCache {
   fetchedAt: number;
 }
 
-const CATALOG_MEMORY_TTL_MS = 15 * 60 * 1000;
+const CATALOG_MEMORY_TTL_MS = 2 * 60 * 1000;
 let catalogCache: CatalogCache | null = null;
 let inFlightCatalogPromise: Promise<{
   products: Record<string, any>[];
@@ -85,7 +85,24 @@ async function getCatalog(): Promise<{
 
       const products = prodSnap.docs
         .map((d) => ({ ...d.data(), id: d.id } as Record<string, any>))
-        .filter((p) => !p.status || p.status === 'approved');
+        .filter((p) => !p.status || p.status === 'approved')
+        .sort((a, b) => {
+          const aHas = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder);
+          const bHas = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder);
+          if (aHas && bHas) {
+            if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+          } else if (aHas && !bHas) {
+            return -1;
+          } else if (!aHas && bHas) {
+            return 1;
+          }
+          const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+          const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+          if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+            return bTime - aTime;
+          }
+          return String(a.id || '').localeCompare(String(b.id || ''));
+        });
       const categories = catSnap.docs.map((d) => ({ ...d.data(), id: d.id } as Record<string, any>));
 
       catalogCache = { products, categories, fetchedAt: Date.now() };
@@ -573,7 +590,7 @@ export default async function handler(req: any, res: any) {
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.end(rendered);
   } catch (err: any) {
     console.error('[Vercel SEO] Error:', err?.message || err);
